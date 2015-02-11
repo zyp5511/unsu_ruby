@@ -81,7 +81,8 @@ elsif oper == "draw_group_quality"
 				end
 			end
 			#changed = x.prune_group #grouping merging
-			x.bettergroups.each_with_index do |g,i|
+			#x.bettergroups.each_with_index do |g,i|
+			bettergroups.each_with_index do |g,i|
 				gqual = vorotable.group_quality g
 				x.draw_group(g,x.colortab[(i+1)*31],"#{gqual}")
 				#x.draw_group(g,x.colortab[(i+1)*31],"x")
