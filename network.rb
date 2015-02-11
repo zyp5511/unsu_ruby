@@ -78,6 +78,8 @@ class Network
 	#		nil
 	#	end
 	#end
+
+	
 	def restrict fname
 		@graph = RGL::AdjacencyGraph.new
 		@nodes = Set.new

@@ -55,8 +55,8 @@ class Rect
 		aw = arect.w
 		ah = arect.h
 
-		sw = @w>aw ? @w : aw
-		sh = @h>ah ? @h : ah
+		sw = (@w+aw)
+		sh = (@h+ah)
 
 		dx = (@x-arect.x+(@w-aw).to_f/2).abs.to_f/sw
 		dy = (@y-arect.y+(@h-ah).to_f/2).abs.to_f/sh

@@ -3,34 +3,26 @@ require_relative 'point'
 
 class RectGroup
 	attr_accessor :rects
-	attr_accessor :inferred_rects
 	attr_accessor :matched
-	attr_accessor :aggregated_rect
 	attr_accessor :originx, :originy
 	attr_accessor :originsx,:originsy # global unit length in pix
 	@@originmx = nil
 	@@originmy = nil
 
-	def initialize arect=nil, airect=nil
+	def initialize arect=nil
 		matched = false
 		if arect!=nil
 			@rects=[arect]
-			@inferred_rects=[airect]
 		else
 			@rects=[]
-			@inferred_rects=[]
 		end
 	end
 
 	def self.merge ga,gb
 		arects=ga.rects+gb.rects
-		ainferred_rects=nil
-		if ga.inferred_rects!=nil and gb.inferred_rects!=nil
-			ainferred_rects=ga.inferred_rects+gb.inferred_rects
-		end
+
 		res = RectGroup.new 
 		res.rects = arects
-		res.inferred_rects = ainferred_rects
 
 		alpha = ga.rects.length;
 		beta = gb.rects.length;
@@ -139,49 +131,11 @@ class RectGroup
 	end
 
 
-	def inferred_include arect
-		if !@inferred_rects.empty?
-			return @inferred_rects.inject(false){|res,rec|res || (rec.include arect)}
-		else 
-			return false
-		end
-	end
-
-	def add_rect_with_inferred ar, air
-		@rects << ar;
-		@inferred_rects << air;
-	end
-
 	def add_rect ar
 		@rects << ar;
 	end
 
-	def reset_infer table
-		@inferred_rects = []
-		@rects.each{|r| ir = table.transform r;@inferred_rects<<ir}
-	end
 
-	def aggregate_avg
-		irc = inferred_rects.length.to_f
-		medx = inferred_rects.inject(0){|s,r|s+r.x}/irc
-		medy = inferred_rects.inject(0){|s,r|s+r.y}/irc
-		medw = inferred_rects.inject(0){|s,r|s+r.w}/irc
-		medh = inferred_rects.inject(0){|s,r|s+r.h}/irc
-		@aggregated_rect = Rect.new(-1,0,medx,medy,medw,medh)
-	end
-
-	def aggregate
-		ax = inferred_rects.map{|r|r.x}.sort!
-		ay = inferred_rects.map{|r|r.y}.sort!
-		aw = inferred_rects.map{|r|r.w}.sort!  
-		ah = inferred_rects.map{|r|r.h}.sort!  
-		med = ->(rules){rules[rules.size/2]}
-		medx = med.call(ax)
-		medy = med.call(ay)
-		medw = med.call(aw)
-		medh = med.call(ah)
-		@aggregated_rect = Rect.new(-1,0,medx,medy,medw,medh)
-	end
 	def aggregate_with_table table
 		if @rects.length > 1 
 			itc = 0;
@@ -201,6 +155,7 @@ class RectGroup
 			return nil
 		end
 	end
+
 	def adjust i,table
 		node = @rects[i]
 		rest = @rects - [node];

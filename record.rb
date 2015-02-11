@@ -124,28 +124,6 @@ class Record
 	end
 
 
-	def group_rects  table
-		@groups = Hash.new
-		if @headset==nil
-			raise "Empty goodset"
-		else
-			@headset.each do |r|
-				ir = table.transform r
-				if !@groups.values.empty?
-					g = @groups.values.find{|v|v.inferred_include ir}
-				else 
-					g = nil
-				end
-				if g!=nil
-					@groups[r]=g
-					g.add_rect_with_inferred r, ir;
-				else
-					@groups[r]=RectGroup.new(r,ir)
-				end
-			end
-		end
-	end
-
 	def load_img
 		@ori ||= Magick::Image.read(File.join(@src,@filename).to_s).first
 	end
