@@ -43,7 +43,6 @@ class Record
 	end
 
 	def prune_group
-
 		groupscurrent = @groups.values.to_set.select{|g|g.rects.map{|x|x.type}.to_set.length>2}.to_a
 		its = 0;
 		changed = true;
@@ -72,8 +71,7 @@ class Record
 			groupscurrent = groupsnew
 			its=its+1
 		end
-
-		@bettergroups = groupsnew # one iteration for now
+		@bettergroups = groupsnew 
 		changed
 	end
 
