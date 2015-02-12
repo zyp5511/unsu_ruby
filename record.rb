@@ -1,5 +1,6 @@
 require 'RMagick'
 require 'fileutils'
+require 'set'
 
 require 'rgl/adjacency'
 require 'rgl/traversal'
@@ -40,6 +41,10 @@ class Record
 
 	def colortab
 		@@colors
+	end
+	def prune_rect threshold
+		rejset = @rects.group_by(&:type).map{|x,y|[x,y.length]}.reject{|p|p[1]>threshold}.map{|p|p[0]}.to_set
+		@rects.reject!{|r|rejset.include?(r.type)}
 	end
 
 	def prune_group

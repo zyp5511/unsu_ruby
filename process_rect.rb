@@ -85,12 +85,35 @@ elsif oper == "draw_group_quality"
 			bettergroups.each_with_index do |g,i|
 				gqual = vorotable.group_quality g
 				x.draw_group(g,x.colortab[(i+1)*31],"#{gqual}")
-				#x.draw_group(g,x.colortab[(i+1)*31],"x")
 				puts "#{x.filename}\t#{i}\t#{gqual}"
 			end
-			#if changed
 			x.export
-			#end
+		end
+	}
+elsif oper == "draw_group_car"
+	process = ->(x){
+		x.prune_rect 50
+		x.group_rects_with_graph  nettable
+		goodgroups=x.groups.values.to_set
+		bettergroups = goodgroups.select{|g|g.rects.map{|x|x.type}.to_set.length>2}
+		if !bettergroups.empty?
+			changed = false;
+			bettergroups.each_with_index do |g,i|
+				begin
+					#g.aggregate_with_table nettable # tweaking position according to neighbors' position
+					g.calibrate_global global_table
+				rescue Exception => e
+					puts e
+					puts e.backtrace
+					puts
+				end
+			end
+			bettergroups.each_with_index do |g,i|
+				gqual = vorotable.group_quality g
+				x.draw_group(g,x.colortab[(i+1)*31],"#{gqual}")
+				puts "#{x.filename}\t#{i}\t#{gqual}"
+			end
+			x.export
 		end
 	}
 end
