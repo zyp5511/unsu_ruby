@@ -15,7 +15,6 @@ class Record
 	attr_accessor :rects,:filename
 	attr_accessor :groups
 	attr_accessor :bettergroups
-	attr_accessor :headset
 	attr_accessor :graph
 	attr_accessor :edges
 	@@colors = Hash.new{|h,k|h[k]="\##{Random.rand(16777216).to_i.to_s(16).rjust(6,'0')}"}
@@ -43,8 +42,10 @@ class Record
 		@@colors
 	end
 	def prune_rect threshold
-		rejset = @rects.group_by(&:type).map{|x,y|[x,y.length]}.reject{|p|p[1]>threshold}.map{|p|p[0]}.to_set
+		puts "before pruning:#{@rects.length}"
+		rejset = @rects.group_by(&:type).map{|x,y|[x,y.length]}.reject{|p|p[1]<threshold}.map{|p|p[0]}.to_set
 		@rects.reject!{|r|rejset.include?(r.type)}
+		puts "after pruning:#{@rects.length}"
 	end
 
 	def prune_group
@@ -80,51 +81,43 @@ class Record
 		changed
 	end
 
-	def pick_good_set head
-		if @rects !=nil
-			@headset = @rects.select{|r|head.include? r.type }
-		else 
-			@headset = [];
-		end
-	end
 
 	def group_rects_with_graph(net)
 		@groups = Hash.new
-		if @headset==nil
+		if @rects==nil
 			raise "Empty goodset"
 		else
 			head_node_lookup = Hash.new
 			@graph = RGL::AdjacencyGraph.new
 			#@edges = Hash.new()
-			@headset.each_with_index do |r,i| 
+			@rects.each_with_index do |r,i| 
 				head_node_lookup[r]=i
 				@graph.add_vertex(i*10000+r.type)
 			end
-			hidx = (0...@headset.size).to_a
+			hidx = (0...@rects.size).to_a
 			hidx.combination(2).each do |r,s|
-				same = @headset[r].type == @headset[s].type
+				same = @rects[r].type == @rects[s].type
 				if !same
-					rule = net.query @headset[r].type, @headset[s].type
+					rule = net.query @rects[r].type, @rects[s].type
 					if !rule.nil?
-						rdis=((rule.transform_with_type @headset[r]).diff @headset[s])
+						rdis=((rule.transform_with_type @rects[r]).diff @rects[s])
 					end
 				else
-					rdis = @headset[r].diff @headset[s]
+					rdis = @rects[r].diff @rects[s]
 				end
 				if (same or !rule.nil?) and rdis < 0.8 # old value is 0.5
-					@graph.add_edge(r*10000+@headset[r].type,
-									s*10000+@headset[s].type)
+					@graph.add_edge(r*10000+@rects[r].type,
+									s*10000+@rects[s].type)
 					#@edges[[head_node_lookup[r]*10000+r.type, head_node_lookup[s]*10000+s.type]]=rdis;
 				end
 			end
 			@graph.each_connected_component do |c|
 				c.inject(RectGroup.new) do |rg,ri|
-					@groups[@headset[ri/10000]]=rg;
-					rg.add_rect @headset[ri/10000];
+					@groups[@rects[ri/10000]]=rg;
+					rg.add_rect @rects[ri/10000];
 					rg
 				end
 			end
-
 		end
 	end
 

@@ -92,7 +92,7 @@ elsif oper == "draw_group_quality"
 	}
 elsif oper == "draw_group_car"
 	process = ->(x){
-		x.prune_rect 50
+		x.prune_rect 10
 		x.group_rects_with_graph  nettable
 		goodgroups=x.groups.values.to_set
 		bettergroups = goodgroups.select{|g|g.rects.map{|x|x.type}.to_set.length>2}
@@ -120,8 +120,7 @@ end
 
 records.each do|x|
 	begin
-		x.pick_good_set head
-		if !x.headset.empty?
+		if !x.rects.empty?
 			c+=1
 			process.call(x)
 		end
