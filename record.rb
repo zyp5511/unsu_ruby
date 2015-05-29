@@ -41,6 +41,8 @@ class Record
 	def colortab
 		@@colors
 	end
+
+	## reject rects of type which appears too many times.
 	def prune_rect threshold
 		puts "before pruning:#{@rects.length}"
 		rejset = @rects.group_by(&:type).map{|x,y|[x,y.length]}.reject{|p|p[1]<threshold}.map{|p|p[0]}.to_set
@@ -48,6 +50,7 @@ class Record
 		puts "after pruning:#{@rects.length}"
 	end
 
+	## pruning group with <=2 rects and merge groups by origin position
 	def prune_group
 		groupscurrent = @groups.values.to_set.select{|g|g.rects.map{|x|x.type}.to_set.length>2}.to_a
 		its = 0;

@@ -95,6 +95,7 @@ class Network
 			end
 		#	set_distance good[0],good[1],1
 		end
+		## floyd algorithm for all pair shortest distance
 		#nodes_array = @nodes.sort
 		#for k in 0...(nodes_array.length)
 		#	for i in 0...(nodes_array.length-1)
