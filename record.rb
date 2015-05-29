@@ -13,6 +13,7 @@ require_relative 'transform'
 
 class Record
 	attr_accessor :rects,:filename
+	attr_accessor :inferred_rects
 	attr_accessor :groups
 	attr_accessor :bettergroups
 	attr_accessor :graph
@@ -40,6 +41,12 @@ class Record
 
 	def colortab
 		@@colors
+	end
+
+	def pick_good_set head
+		if @rects !=nil
+			@rects.select!{|r|head.include? r.type }
+		end
 	end
 
 	## reject rects of type which appears too many times.
@@ -188,6 +195,30 @@ class Record
 
 	def self.seperate_records(src,des,lines)
 		lines.map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map{|a| Record.new(src,des,a[0][1]+a[1][1])}
+	end
+	## deprecated method, kept to run old diff.rb script
+	def group_rects  table
+		@groups = Hash.new
+		if @rects==nil
+			raise "Empty goodset"
+		else
+			@inferred_rects = Hash.new
+			@rects.each do |r| 
+				ir = table.transform r
+				@inferred_rects[r]=ir;
+				if !@groups.values.empty?
+					g = @groups.values.find{|v|v.include ir}
+				else 
+					g = nil
+				end
+				if g!=nil
+					@groups[r]=g
+					g.add ir
+				else
+					@groups[r]=RectGroup.new(ir)
+				end
+			end
+		end
 	end
 
 end

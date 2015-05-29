@@ -2,6 +2,7 @@ require 'set'
 require 'rmagick'
 require 'fileutils'
 require_relative 'record'
+require_relative 'transform_old'
 
 src = ARGV[0]
 des = ARGV[1]
@@ -61,13 +62,13 @@ lcrecords.each do |k,v|
 	#ori = Magick::Image.read(File.join(src,k).to_s).first
 	#oscimg =  ori.clone
 
-	v.groups.values.to_set.each do |g|
+	group_set = v.groups.values.to_set
+	group_set.each do |g|
 			#g.aggregate_with_table nettable
-			#g.reset_infer table
 			g.aggregate
 	end
-	#vg = v.groups.values.to_set
-	vg=v.groups.values.to_set.select{|y|y.rects.length>1}
+	
+	vg=group_set.select{|y|y.rects.length>1}
 
 	if cvrecords[k]!=nil
 		cv_processed << k;

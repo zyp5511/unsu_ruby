@@ -3,6 +3,7 @@ require_relative 'point'
 
 class RectGroup
 	attr_accessor :rects
+	attr_accessor :aggregated_rect # legacy code
 	attr_accessor :matched
 	attr_accessor :originx, :originy
 	attr_accessor :originsx,:originsy # global unit length in pix
@@ -135,6 +136,23 @@ class RectGroup
 		@rects << ar;
 	end
 
+	def add ar
+		self.add_rect ar
+	end
+
+	## legacy code for head/face detection
+	def aggregate
+		ax = @rects.map{|r|r.x}.sort!
+		ay = @rects.map{|r|r.y}.sort!
+		aw = @rects.map{|r|r.w}.sort!  
+		ah = @rects.map{|r|r.h}.sort!  
+		med = ->(rules){rules[rules.size/2]}
+		medx = med.call(ax)
+		medy = med.call(ay)
+		medw = med.call(aw)
+		medh = med.call(ah)
+		@aggregated_rect = Rect.new(-1,0,medx,medy,medw,medh)
+	end
 
 	def aggregate_with_table table
 		if @rects.length > 1 
