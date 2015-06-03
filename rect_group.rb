@@ -62,10 +62,11 @@ class RectGroup
 	def infer_part_globally global_table,n_index
 		pt = global_table[n_index] 
 		if pt !=nil
-			res = Rect.new(n_index,0,pt.x*@originsx+@originx,pt.y*@originsy+@originy,pt.s*@originsx,pt.s*@originsy)
+			@aggregated_rect= Rect.new(n_index,0,pt.x*@originsx+@originx,pt.y*@originsy+@originy,pt.s*@originsx,pt.s*@originsy)
 		else 
 			raise "Entry not exist in global table"
 		end
+		@aggregated_rect
 	end
 
 	def calibrate_global global_table
