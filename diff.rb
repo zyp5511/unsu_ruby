@@ -47,20 +47,29 @@ if !File.directory?(des)
 end
 
 
-#fndir = File.join(des,'fn')
-#if !File.directory?(fndir)
-#	FileUtils.mkdir(fndir)
-#end
-#
-#fpdir = File.join(des,'fp')
-#if !File.directory?(fpdir)
-#	FileUtils.mkdir(fpdir)
-#end
+fndir = File.join(des,'fn')
+if !File.directory?(fndir)
+	FileUtils.mkdir(fndir)
+end
+
+fpdir = File.join(des,'fp')
+if !File.directory?(fpdir)
+	FileUtils.mkdir(fpdir)
+end
+
+def draw_rect(ori,cvr)
+	rdraw = Magick::Draw.new
+	rdraw.stroke('yellow').stroke_width(0.5)
+	rdraw.fill("transparent")
+	rdraw.rectangle(cvr.x,cvr.y,cvr.x+cvr.w-1,cvr.y+cvr.h-1)
+	#rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.type.to_s)
+	rdraw.draw(ori)
+end
 
 cv_processed = Set.new()
 lcrecords.each do |k,v|
-	#ori = Magick::Image.read(File.join(src,k).to_s).first
-	#oscimg =  ori.clone
+	ori = Magick::Image.read(File.join(src,k).to_s).first
+	oscimg =  ori.clone
 
 	group_set = v.groups.values.to_set
 	group_set.each do |g|
@@ -69,21 +78,16 @@ lcrecords.each do |k,v|
 	end
 	
 	vg=group_set.select{|y|y.rects.length>1}
-
+	found = false
 	if cvrecords[k]!=nil
 		cv_processed << k;
-		found = false
 		cvrecords[k].each do |cvr|
 			vid = vg.select{|vr| vr.aggregated_rect.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
 			if vid.size==0
 				# miss found
 				cso+=1
 				found = true;
-				#rdraw = Magick::Draw.new
-				#rdraw.stroke('yellow').stroke_width(0.5)
-				#rdraw.fill("transparent")
-				#rdraw.rectangle(cvr.x,cvr.y,cvr.x+cvr.w-1,cvr.y+cvr.h-1)
-				#rdraw.draw(ori)
+				draw_rect(ori,cvr)
 			else
 				#matched
 				vid.each{|g|g.matched = true;}
@@ -93,12 +97,11 @@ lcrecords.each do |k,v|
 		end
 		if found
 			#export missing faces
-			#ori.write(File.join(des,'fn',k).to_s)
+			ori.write(File.join(des,'fn',k).to_s)
 		end
 	else 
 		puts "CV records not found for #{k}"
 	end
-	found = false;
 	#vv.select{|x|x.matched}.each{|vvr|tphist[vvr.type]+=1}
 	vg.select{|x|x.matched}.each do |g|
 		tcthist[g.rects.length]+=1
@@ -106,15 +109,12 @@ lcrecords.each do |k,v|
 	vg.select{|x|!x.matched}.each do |g|
 		#export false alert
 		fcthist[g.rects.length]+=1;
-		#vrdraw = Magick::Draw.new
-		#vrdraw.stroke('red').stroke_width(0.5)
-		#vrdraw.fill("transparent")
-		#vrdraw.rectangle(vvr.x,vvr.y,vvr.x+vvr.w-1,vvr.y+vvr.h-1)
-		#vrdraw.text(vvr.x+1,vvr.y+vvr.h-20,vvr.type.to_s)
-		#vrdraw.draw(oscimg)
+		draw_rect(oscimg,g.aggregated_rect)
 	end
-	osc+= vg.size-vg.select{|x|x.matched}.size;
-	#oscimg.write(File.join(des,"fp",k).to_s) if found
+	osctemp= vg.length-vg.select{|x|x.matched}.length;
+	osc+= osctemp
+	## FP draw
+	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
 end
 
 File.open(File.join(des,'tcthist.txt'),"w") do |f|
