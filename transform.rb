@@ -70,6 +70,9 @@ class LCTransform
 		"#{@from}=>#{@to}\t#{@xr}:#{@yr}:#{@r}\t#{@vx}:#{@vy}:#{@vr}\t#{"derived" if @derived}\t#{@reliability}"
 	end
 
+	def to_tsv_s
+		"#{@from}\t#{@to}\t#{@xr}\t#{@yr}\t#{@r}"
+	end
 
 	# inverse transform
 	def inv
