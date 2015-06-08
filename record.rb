@@ -19,10 +19,9 @@ class Record
 	attr_accessor :graph
 	attr_accessor :edges
 	@@colors = Hash.new{|h,k|h[k]="\##{Random.rand(16777216).to_i.to_s(16).rjust(6,'0')}"}
-	def initialize(src,des,lines)
+	def initialize(src,lines)
 		@filename = lines[0];
 		@vectors = lines[1]
-		@dest = des
 		@src = src
 		if lines.length > 3
 			tmp = lines.drop(2).take_while{|x| x.include?(":")&&!x.include?("=>")}
@@ -136,9 +135,9 @@ class Record
 		@ori ||= Magick::Image.read(File.join(@src,@filename).to_s).first
 	end
 
-	def export
+	def export dest
 		self.load_img
-		@ori.write(File.join(@dest,@filename).to_s)
+		@ori.write(File.join(dest,@filename).to_s)
 	end
 
 	#def export_dot
@@ -182,19 +181,19 @@ class Record
 		rdraw.draw(@ori)
 	end
 
-	def crop_rect(rect)
+	def crop_rect(rect,dest)
 		self.load_img
 		temp = @ori.crop(rect.x,rect.y,rect.w,rect.h,true)
 		type = rect.type
-		subdir = "#{@dest}/#{type}".chomp
+		subdir = "#{dest}/#{type}".chomp
 		if !File.directory?(subdir)
 			FileUtils.mkdir(subdir)
 		end
 		temp.write("#{File.join(subdir,File.basename(@filename, File.extname(@filename))).to_s}_#{rect.x}+#{rect.y}+#{rect.w}x#{rect.h}_#{type}#{File.extname(@filename)}")
 	end
 
-	def self.seperate_records(src,des,lines)
-		lines.map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map{|a| Record.new(src,des,a[0][1]+a[1][1])}
+	def self.seperate_records(src,lines)
+		lines.map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map{|a| Record.new(src,a[0][1]+a[1][1])}
 	end
 	## deprecated method, kept to run old diff.rb script
 	def group_rects  table

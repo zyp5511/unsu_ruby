@@ -8,20 +8,15 @@ src = ARGV[0]
 des = ARGV[1]
 cvdat = ARGV[2]
 lcdat = ARGV[3]
-headdat = ARGV[4]
-transfn = ARGV[5]
-
-table = LCTransformTable.loadMap(transfn,1006) #hard coded cluster number, should be changed later
-head = IO.readlines(headdat).map{|x|x.to_i}.to_set
 
 def parse_cv_data fname
 	IO.foreach(fname).map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map do |a|
-		[a[0][1][0], a[1][1].map{|x|Rect.makePureRect(x)}]
+		[a[0][1][0], a[1][1].map{|x|Rect.makePureRect(x)}.to_set]
 	end
 end
 
 cvrecords = Hash[parse_cv_data cvdat]
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat)).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
+lcrecords = Hash[parse_cv_data lcdat]
 
 puts "there are #{lcrecords.length} records"
 
@@ -29,12 +24,6 @@ cso=0
 osc=0
 inter=0
 inter_c=0
-
-tphist = Array.new(1006,0) #hard coded cluster count
-fphist = Array.new(1006,0) #hard coded cluster count
-
-tcthist= Array.new(1000,0) 
-fcthist= Array.new(1000,0) 
 
 if !File.directory?(des)
 	FileUtils.mkdir(des)
@@ -62,22 +51,15 @@ end
 
 cv_processed = Set.new()
 
-
 lcrecords.each do |k,v|
 	ori = Magick::Image.read(File.join(src,k).to_s).first
 	oscimg =  ori.clone
-
-	group_set = v.groups.values.to_set
-	group_set.each do |g|
-		g.aggregate
-	end
-
-	vg=group_set.select{|y|y.rects.length>1}
 	found = false
+	matched = Hash.new
 	if !cvrecords[k].nil?
 		cv_processed << k;
 		cvrecords[k].each do |cvr|
-			vid = vg.select{|vr| vr.aggregated_rect.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
+			vid = v.select{|vr| vr.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
 			if vid.length==0
 				# miss found
 				cso+=1
@@ -85,8 +67,8 @@ lcrecords.each do |k,v|
 				draw_rect(ori,cvr)
 			else
 				# matched
-				vid.each{|g|g.matched = true;}
-				inter_c+=vid.first.aggregated_rect.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
+				vid.each{|g|matched[g] = true;}
+				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
 			end
 		end
@@ -97,34 +79,15 @@ lcrecords.each do |k,v|
 	else 
 		puts "CV records not found for #{k}"
 	end
-	#vv.select{|x|x.matched}.each{|vvr|tphist[vvr.type]+=1}
-	vg.select{|x|x.matched}.each do |g|
-		tcthist[g.rects.length]+=1
-	end
-	vg.select{|x|!x.matched}.each do |g|
+	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
-		fcthist[g.rects.length]+=1;
-		draw_rect(oscimg,g.aggregated_rect)
+		draw_rect(oscimg,g)
 	end
-	osctemp= vg.length-vg.select{|x|x.matched}.length;
+	osctemp=v.length-v.select{|x|matched[x]}.length;
 	osc+= osctemp
 	## FP draw
 	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
 end
-
-File.open(File.join(des,'tcthist.txt'),"w") do |f|
-	tcthist.each_with_index{|x,i| f.puts "#{i}\t#{x}"}
-end
-File.open(File.join(des,'fcthist.txt'),"w") do |f|
-	fcthist.each_with_index{|x,i| f.puts "#{i}\t#{x}"}
-end
-
-#File.open(File.join(des,'tphist.txt'),"w") do |f|
-#	tphist.each_with_index{|x,i| f.puts "#{i}\t#{x}"}
-#end
-#File.open(File.join(des,'fphist.txt'),"w") do |f|
-#	fphist.each_with_index{|x,i| f.puts "#{i}\t#{x}"}
-#end
 
 cso_extra=0;
 cvrecords.each do |k,v| 

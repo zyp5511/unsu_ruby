@@ -34,7 +34,7 @@ def parse_cv_data fname
 end
 
 truth_dat = Hash[parse_cv_data truth_fn]
-pred_dat = Hash[Record::seperate_records(src,des,IO.foreach(pred_fn)).select{|r|r.rects!=nil}.each do |r|
+pred_dat = Hash[Record::seperate_records(src,IO.foreach(pred_fn)).select{|r|r.rects!=nil}.each do |r|
 	begin
 		puts r.filename
 		r.group_rects_with_graph  nettable
