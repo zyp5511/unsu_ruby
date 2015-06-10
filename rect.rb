@@ -19,8 +19,8 @@ class Rect
 	end
 
 	def self.makePureRect(sdesc)
-		x,y,w,h=sdesc.split(':').map(&:to_i)
-		Rect.new(-1,0,x,y,w,h)
+		x,y,w,h,dis=sdesc.split(':').map(&:to_i)
+		Rect.new(-1,dis,x,y,w,h)
 	end
 
 	def include other

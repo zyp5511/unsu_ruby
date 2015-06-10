@@ -19,23 +19,10 @@ class Record
 	attr_accessor :graph
 	attr_accessor :edges
 	@@colors = Hash.new{|h,k|h[k]="\##{Random.rand(16777216).to_i.to_s(16).rjust(6,'0')}"}
-	def initialize(src,lines)
-		@filename = lines[0];
-		@vectors = lines[1]
+	def initialize(filename,src,rects)
+		@filename = filename
 		@src = src
-		if lines.length > 3
-			tmp = lines.drop(2).take_while{|x| x.include?(":")&&!x.include?("=>")}
-			if tmp != nil
-				@rects = tmp.map do |l| 
-					begin 
-						Rect.makeRect(l) 
-					rescue 
-						puts lines.inspect
-					end
-				end
-				#@ori = Magick::Image.read(File.join(src,@filename).to_s).first
-			end
-		end
+		@rects = rects
 	end
 
 	def colortab
@@ -192,9 +179,47 @@ class Record
 		temp.write("#{File.join(subdir,File.basename(@filename, File.extname(@filename))).to_s}_#{rect.x}+#{rect.y}+#{rect.w}x#{rect.h}_#{type}#{File.extname(@filename)}")
 	end
 
-	def self.seperate_records(src,lines)
-		lines.map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map{|a| Record.new(src,a[0][1]+a[1][1])}
+	## different parsers for records of different format
+	@@record_parsers={
+		origin:
+		lambda do |src,lines|
+			filename = lines[0];
+			vectors = lines[1]
+			if lines.length > 3
+				tmp = lines.drop(2).take_while{|x| x.include?(":")&&!x.include?("=>")}
+				if tmp != nil
+					rects = tmp.map do |l| 
+						begin 
+							Rect.makeRect(l) 
+						rescue 
+							puts lines.inspect
+						end
+					end
+				end
+			end
+			Record.new(filename,src,rects)
+		end,
+		cv:
+		lambda do |src, lines|
+			filename = lines[0];
+			rects = lines.drop(1).map{|x|Rect.makePureRect(x)}
+			Record.new(filename,src,rects)
+		end
+	}
+
+	def self.parsers
+		@@record_parsers
 	end
+
+	def self.seperate_records(src,lines,record_parser)
+		lines.map{|x|x.chomp}.chunk{|l|self.is_img? l}.each_slice(2).map{|a| puts a[0][1].inspect if a[0][1].length>1;record_parser.call(src,a[1][1].unshift(a[0][1].last))}
+	end
+
+	def self.is_img? l
+		l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") 
+	end
+
+
 	## deprecated method, kept to run old diff.rb script
 	def group_rects  table
 		@groups = Hash.new
@@ -219,5 +244,4 @@ class Record
 			end
 		end
 	end
-
 end

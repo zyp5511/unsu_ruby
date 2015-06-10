@@ -14,14 +14,8 @@ transfn = ARGV[5]
 table = LCTransformTable.loadMap(transfn,1006) #hard coded cluster number, should be changed later
 head = IO.readlines(headdat).map{|x|x.to_i}.to_set
 
-def parse_cv_data fname
-	IO.foreach(fname).map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map do |a|
-		[a[0][1][0], a[1][1].map{|x|Rect.makePureRect(x)}]
-	end
-end
-
-cvrecords = Hash[parse_cv_data cvdat]
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat)).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
+cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
 
 puts "there are #{lcrecords.length} records"
 

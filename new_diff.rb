@@ -9,14 +9,8 @@ des = ARGV[1]
 cvdat = ARGV[2]
 lcdat = ARGV[3]
 
-def parse_cv_data fname
-	IO.foreach(fname).map{|x|x.chomp}.chunk{|l|l.end_with?("gif")||l.end_with?("jpg")||l.end_with?("png")||l.end_with?("jpeg") }.each_slice(2).map do |a|
-		[a[0][1][0], a[1][1].map{|x|Rect.makePureRect(x)}.to_set]
-	end
-end
-
-cvrecords = Hash[parse_cv_data cvdat]
-lcrecords = Hash[parse_cv_data lcdat]
+cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 
 puts "there are #{lcrecords.length} records"
 
