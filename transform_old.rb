@@ -62,19 +62,19 @@ class LCTransformTable
 			end
 		end
 		b = Hash[trans.map{|k,v|[k,v.min_by{|x|x.reliability}]}]
-		#File.open("cluster_rules_cand.txt", "w") do |file|
-		#	trans.each do |k,v|
-		#		file.puts "#{k}:"
-		#		v.each{|r|file.puts "\t#{r}"}
-		#		file.puts
-		#	end 
-		#end 
-		#File.open("52cluster_rules_selection.txt", "w") do |file|
-		#	b.each do |k,v|
-		#		file.puts "#{k}:#{v.to}"
-		#		file.puts
-		#	end 
-		#end
+		File.open("cluster_rules_cand.txt", "w") do |file|
+			trans.each do |k,v|
+				file.puts "#{k}:"
+				v.each{|r|file.puts "\t#{r}"}
+				file.puts
+			end 
+		end 
+		File.open("cluster_rules_selection.txt", "w") do |file|
+			b.each do |k,v|
+				file.puts "#{k}:#{v.to}"
+				file.puts
+			end 
+		end
 
 		File.open("rules.txt", "w") do |file|
 			b.each do |k,v|

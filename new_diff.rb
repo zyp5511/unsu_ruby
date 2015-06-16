@@ -9,7 +9,8 @@ des = ARGV[1]
 cvdat = ARGV[2]
 lcdat = ARGV[3]
 
-cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+# threshold for poselets: 3.6 added
+cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>3.6}]}] 
 lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 
 puts "there are #{lcrecords.length} records"

@@ -74,6 +74,12 @@ class LCTransform
 		"#{@from}\t#{@to}\t#{@xr}\t#{@yr}\t#{@r}"
 	end
 
+
+	def to_short_s
+		"#{@from}=>#{@to}\t#{@xr}:#{@yr}:#{@r}"
+	end
+
+
 	# inverse transform
 	def inv
 		LCTransform.new(@to,@from,-@xr/@r,-@yr/@r,1/@r, @vx/@r/@r,@vy/@r/@r,@vr,true,@reliability)
