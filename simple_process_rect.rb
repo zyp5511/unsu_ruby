@@ -23,7 +23,8 @@ elsif oper == "draw"
 	process = lambda do |x|
 		x.rects.each do |r|
 			begin
-				x.draw_rect(r,"\#ffffff") if r.dis > 3.6
+				#x.draw_rect(r,"\#ffffff") if r.dis > 3.6
+				x.draw_rect(r,"\#ffffff")
 			rescue Exception => e
 				puts "process_rect=======================Error!====================="
 				puts e.backtrace.join("\n")

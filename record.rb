@@ -30,7 +30,7 @@ class Record
 	end
 
 	def pick_good_set head
-		if @rects !=nil
+		if !@rects.nil?
 			@rects.select!{|r|head.include? r.type }
 		end
 	end
@@ -185,7 +185,7 @@ class Record
 		lambda do |src,lines|
 			filename = lines[0];
 			vectors = lines[1]
-			if lines.length > 3
+			if lines.length > 2
 				tmp = lines.drop(2).take_while{|x| x.include?(":")&&!x.include?("=>")}
 				if tmp != nil
 					rects = tmp.map do |l| 
@@ -223,7 +223,7 @@ class Record
 	## deprecated method, kept to run old diff.rb script
 	def group_rects  table
 		@groups = Hash.new
-		if @rects==nil
+		if @rects.nil?
 			raise "Empty goodset"
 		else
 			@inferred_rects = Hash.new
@@ -235,7 +235,7 @@ class Record
 				else 
 					g = nil
 				end
-				if g!=nil
+				if !g.nil?
 					@groups[r]=g
 					g.add ir
 				else
