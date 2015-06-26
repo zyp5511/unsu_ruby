@@ -19,8 +19,8 @@ class Rect
 	end
 
 	def self.makePureRect(sdesc)
-		x,y,w,h,dis=sdesc.split(':').map(&:to_i)
-		Rect.new(-1,dis,x,y,w,h)
+		x,y,w,h,dis,ty=sdesc.split(':').map(&:to_i)
+		Rect.new(ty,dis,x,y,w,h)
 	end
 
 	def include other
@@ -30,7 +30,8 @@ class Rect
 	end 
 
 	def to_s
-		"#{@type}:#{@x}:#{@y}:#{@w}:#{@h}"
+		#"#{@type}:#{@x}:#{@y}:#{@w}:#{@h}"
+		"#{@x}:#{@y}:#{@w}:#{@h}:#{@dis}:#{@type}"
 	end
 
 	def to_short_s
@@ -63,6 +64,11 @@ class Rect
 		dw = (Math.log(@w)-Math.log(aw)).abs.to_f
 
 		dx+dy+dw
+	end
+
+	def shift! dx, dy
+		@x += dx*@w
+		@y += dy*@h
 	end
 
 	def *(k)# for average calculation

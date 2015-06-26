@@ -158,7 +158,7 @@ class Record
 	def draw_rect(rect,color=@@colors[rect.type],dash=false)
 		self.load_img
 		rdraw = Magick::Draw.new
-		rdraw.text(rect.x,rect.y+10,rect.type.to_s)
+		rdraw.text(rect.x,rect.y+10,rect.type.to_s) if !rect.type.nil?
 		rdraw.stroke(color).stroke_width(0.5)
 		if dash
 			rdraw.stroke_dasharray(5,5)
@@ -187,7 +187,7 @@ class Record
 			vectors = lines[1]
 			if lines.length > 2
 				tmp = lines.drop(2).take_while{|x| x.include?(":")&&!x.include?("=>")}
-				if tmp != nil
+				if !tmp.nil?
 					rects = tmp.map do |l| 
 						begin 
 							Rect.makeRect(l) 

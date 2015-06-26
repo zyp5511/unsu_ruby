@@ -42,6 +42,7 @@ def draw_rect(ori,cvr)
 	rdraw.fill("transparent")
 	rdraw.rectangle(cvr.x,cvr.y,cvr.x+cvr.w-1,cvr.y+cvr.h-1)
 	#rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.type.to_s)
+	rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.dis.to_s)
 	rdraw.draw(ori)
 end
 

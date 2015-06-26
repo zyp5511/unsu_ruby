@@ -23,7 +23,9 @@ File.open(exportfn, 'w') do |f|
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
 			g.aggregate
-			f.puts g.aggregated_rect.to_short_s
+			g.aggregated_rect.shift!(0,-0.5)
+			#f.puts g.aggregated_rect.to_short_s
+			f.puts g.aggregated_rect.to_s
 		end
 	end
 end

@@ -147,12 +147,16 @@ class RectGroup
 		ay = @rects.map{|r|r.y}.sort!
 		aw = @rects.map{|r|r.w}.sort!  
 		ah = @rects.map{|r|r.h}.sort!  
-		med = ->(rules){rules[rules.size/2]}
-		medx = med.call(ax)
-		medy = med.call(ay)
-		medw = med.call(aw)
-		medh = med.call(ah)
-		@aggregated_rect = Rect.new(-1,0,medx,medy,medw,medh)
+		#med = ->(rules){rules[rules.length/2]}
+		perc = ->(rules,n){rules[(rules.length*n).to_i]}
+		med = ->(rules){perc.call(rules,0.5)}
+		avg = ->(rules){rules.inject(:+)/rules.length}
+		lamb = med 
+		medx = lamb.call(ax)
+		medy = lamb.call(ay)
+		medw = lamb.call(aw)
+		medh = lamb.call(ah)
+		@aggregated_rect = Rect.new(-1,@rects.length,medx,medy,medw,medh)
 	end
 
 	def aggregate_with_table table
