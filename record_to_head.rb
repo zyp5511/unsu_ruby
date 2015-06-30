@@ -19,7 +19,8 @@ puts "there are #{lcrecords.length} records"
 
 File.open(exportfn, 'w') do |f|
 	lcrecords.each do |k,v|
-		group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
+		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
+		group_set = v.groups.values.to_set.select{|y|y.rects.length>0}
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
 			g.aggregate

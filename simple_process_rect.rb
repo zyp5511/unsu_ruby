@@ -23,7 +23,6 @@ elsif oper == "draw"
 	process = lambda do |x|
 		x.rects.each do |r|
 			begin
-				#x.draw_rect(r,"\#ffffff") if r.dis > 3.6
 				x.draw_rect(r,"\#ffffff")
 			rescue Exception => e
 				puts "process_rect=======================Error!====================="
@@ -32,6 +31,22 @@ elsif oper == "draw"
 			end
 		end
 		x.export des
+	end
+elsif oper == "selective_draw"
+	process = lambda do |x|
+		good_rects = x.rects.select{|r| r.dis > 3.6}
+		if !good_rects.empty?
+			good_rects.each do |r|
+				begin
+					x.draw_rect(r,"\#ffffff")
+				rescue Exception => e
+					puts "process_rect=======================Error!====================="
+					puts e.backtrace.join("\n")
+					puts "process_rect=======================Error!====================="
+				end
+			end
+			x.export des
+		end
 	end
 end
 

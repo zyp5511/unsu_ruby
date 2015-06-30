@@ -41,7 +41,7 @@ class Rect
 	def has_point x,y
 		dx = x - @x;
 		dy = y - @y;
-		if(dx>0&&w>dx&&dy>0&&h>dy)
+		if(dx>0&&@w>dx&&dy>0&&@h>dy)
 			return true;
 		else
 			return false;
