@@ -3,12 +3,43 @@ require 'rmagick'
 require 'fileutils'
 require_relative 'record'
 require_relative 'transform_old'
+require 'optparse'
 
-src = ARGV[0]
-lcdat = ARGV[1]
-headdat = ARGV[2]
-transfn = ARGV[3]
-exportfn= ARGV[4]
+options = {}
+OptionParser.new do |opts|
+	opts.banner = "Usage: example.rb [options]"
+
+	opts.on("-s", "--source DIRNAME", "Image Directory") do |v|
+		options[:source] = v
+	end
+
+	opts.on("-r", "--record FILENAME", "record file") do |v|
+		options[:record] = v
+	end
+
+	opts.on("-n", "--node FILENAME", "head node list file") do |v|
+		options[:node] = v
+	end
+	
+	opts.on("-t", "--transform FILENAME", "transform file") do |v|
+		options[:transform] = v
+	end
+
+	opts.on("-o", "--output FILENAME", "output file") do |v|
+		options[:output] = v
+	end
+
+	opts.on("-h", "--help", "Prints this help") do
+		puts opts
+		exit
+	end
+end.parse!
+
+src = options[:source]
+lcdat = options[:record]
+headdat = options[:node]
+transfn = options[:transform]
+exportfn= options[:output]
 
 table = LCTransformTable.loadMap(transfn,1006) #hard coded cluster number, should be changed later
 head = IO.readlines(headdat).map{|x|x.to_i}.to_set
