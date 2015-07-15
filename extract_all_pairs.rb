@@ -4,9 +4,29 @@ require 'set'
 require 'fileutils'
 require_relative 'record'
 require_relative 'transform.rb'
+require 'optparse'
 
-lcdat = ARGV[0]
-listfn = ARGV[1]
+options = {}
+OptionParser.new do |opts|
+	opts.banner = "Usage: example.rb [options]"
+
+	opts.on("-i", "--input FILENAME", "input file") do |v|
+		options[:input] = v
+	end
+
+	opts.on("-o", "--output FILENAME", "output file") do |v|
+		options[:output] = v
+	end
+
+	opts.on("-h", "--help", "Prints this help") do
+		puts opts
+		exit
+	end
+end.parse!
+
+lcdat = options[:input]
+listfn = options[:output]
+
 File.open(listfn,'w') do |f|
 	Record::seperate_records("",IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each do |r|
 		len = r.rects.length

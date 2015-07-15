@@ -32,6 +32,10 @@ OptionParser.new do |opts|
 		options[:verbose] = v
 	end
 
+	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v|
+		options[:fnwidth] = v
+	end
+
 	opts.on("-h", "--help", "Prints this help") do
 		puts opts
 		exit
@@ -99,18 +103,31 @@ end
 
 cv_processed = Set.new()
 
+
+if options.has_key?(:fnwidth)
+	puts "false negative threshold #{options[:fnwidth]} used"
+	wt = options[:fnwidth]
+end
+
 lcrecords.each do |k,v|
 	ori = Magick::Image.read(File.join(src,k).to_s).first
 	oscimg =  ori.clone
 	found = false
 	matched = Hash.new
+	if options.has_key?(:fnwidth)
+		fnrect<<k;
+	end
 	if !cvrecords[k].nil?
 		cv_processed << k;
 		cvrecords[k].each do |cvr|
 			vid = v.select{|vr| vr.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
 			if vid.length==0
 				# miss found
-				fnrect << cvr
+				if options.has_key?(:fnwidth)
+					fnrect << cvr if cvr.w < wt
+				else
+					fnrect << cvr
+				end
 				cso+=1
 				found = true;
 				draw_rect(ori,cvr)
@@ -137,6 +154,9 @@ lcrecords.each do |k,v|
 	osc+= osctemp
 	## FP draw
 	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
+	if fnrect[-1]==k
+		fnrect.pop
+	end
 end
 
 cso_extra=0;
@@ -150,7 +170,12 @@ if !options[:verbose].nil? and options[:verbose]
 
 	File.open(File.join(des,'fnstat.txt'),"w") do |f|
 		fnrect.each do |r|
-			f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+			if r.instance_of?(Rect)
+				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+				f.puts r.to_s
+			else
+				f.puts r;
+			end
 		end
 	end
 	File.open(File.join(des,'tpstat.txt'),"w") do |f|
