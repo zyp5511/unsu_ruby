@@ -19,7 +19,13 @@ class Rect
 	end
 
 	def self.makePureRect(sdesc)
-		x,y,w,h,dis,ty=sdesc.split(':').map(&:to_i)
+		x,y,w,h,dis=sdesc.split(':').map(&:to_i)
+		ty_raw = sdesc.split(':')[-1]
+		if ty_raw[0]=='['
+			ty = ty_raw
+		else
+			ty = ty_raw.to_i
+		end
 		Rect.new(ty,dis,x,y,w,h)
 	end
 

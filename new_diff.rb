@@ -83,6 +83,9 @@ fnrect = [];
 fprect = [];
 tprect = [];
 
+fphist = {};
+tphist = {};
+
 def draw_rect(ori,cvr)
 	begin
 		rdraw = Magick::Draw.new
@@ -90,6 +93,7 @@ def draw_rect(ori,cvr)
 		rdraw.fill("transparent")
 		rdraw.rectangle(cvr.x,cvr.y,cvr.x+cvr.w-1,cvr.y+cvr.h-1)
 		#rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.type.to_s)
+		rdraw.text(cvr.x+1,cvr.y+1,cvr.type.to_s) if !cvr.type.nil?
 		rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.dis.to_s) if !cvr.dis.nil?
 		rdraw.draw(ori)
 	rescue Exception => e
@@ -135,8 +139,26 @@ lcrecords.each do |k,v|
 				# matched
 				tprect << cvr
 				vid.each{|g|matched[g] = true;}
+				if vid.length > 1
+					puts "multiple matches in #{k}"
+				end
 				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
+				begin
+					g_types = vid.first.type[1...-1].split(',').map(&:to_i)
+				rescue Exception => e
+					puts "=======================Error!====================="
+					puts g_types.inspect
+					puts e.backtrace.join("\n")
+					puts "=======================Error!====================="
+				end
+				g_types.each do |atype|
+					if tphist.has_key?(atype)
+						tphist[atype]+=1
+					else
+						tphist[atype]=1
+					end
+				end
 			end
 		end
 		if found
@@ -148,6 +170,22 @@ lcrecords.each do |k,v|
 	end
 	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
+		begin
+			g_types = g.type[1...-1].split(',').map(&:to_i)
+		rescue Exception => e
+			puts "=======================Error!====================="
+			puts g_types.inspect
+			puts g.type.inspect
+			puts e.backtrace.join("\n")
+			puts "=======================Error!====================="
+		end
+		g_types.each do |atype|
+			if fphist.has_key?(atype)
+				fphist[atype]+=1
+			else
+				fphist[atype]=1
+			end
+		end
 		draw_rect(oscimg,g)
 	end
 	osctemp=v.length-v.select{|x|matched[x]}.length;
@@ -181,6 +219,16 @@ if !options[:verbose].nil? and options[:verbose]
 	File.open(File.join(des,'tpstat.txt'),"w") do |f|
 		tprect.each do |r|
 			f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+		end
+	end
+	File.open(File.join(des,'fphist.txt'),"w") do |f|
+		fphist.each do |k,v|
+			f.puts "#{k}\t:\t#{v}"
+		end
+	end
+	File.open(File.join(des,'tphist.txt'),"w") do |f|
+		tphist.each do |k,v|
+			f.puts "#{k}\t:\t#{v}"
 		end
 	end
 end

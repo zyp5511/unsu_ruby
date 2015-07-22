@@ -20,7 +20,7 @@ OptionParser.new do |opts|
 	opts.on("-n", "--node FILENAME", "head node list file") do |v|
 		options[:node] = v
 	end
-	
+
 	opts.on("-t", "--transform FILENAME", "transform file") do |v|
 		options[:transform] = v
 	end
@@ -29,10 +29,19 @@ OptionParser.new do |opts|
 		options[:output] = v
 	end
 
+	opts.on("--bywords", "assessing group by number of visual words") do |v|
+		options[:bywords] = true
+	end
+
+	opts.on("--bias", "torso bias applied or not") do
+		options[:bias] = true
+	end
+
 	opts.on("-h", "--help", "Prints this help") do
 		puts opts
 		exit
 	end
+
 end.parse!
 
 src = options[:source]
@@ -48,14 +57,24 @@ lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[
 
 puts "there are #{lcrecords.length} records"
 
+if options.has_key?(:bias)
+	puts "torso bias applied"
+end
 File.open(exportfn, 'w') do |f|
 	lcrecords.each do |k,v|
-		group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
-		#group_set = v.groups.values.to_set.select{|y|y.rects.length>0}
+		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
+		if options.has_key?(:bywords)
+			group_set = v.groups.values.to_set.select{|y|y.rects.map{|x|x.type}.to_set.length>1}
+		else
+			group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
+		end
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
 			g.aggregate
-			g.aggregated_rect.shift!(0,-0.5)
+			g.aggregated_rect.type = g.rects.map{|x|x.type}
+			if options.has_key?(:bias)
+				g.aggregated_rect.shift!(0,-0.5) #group bias
+			end
 			#f.puts g.aggregated_rect.to_short_s
 			f.puts g.aggregated_rect.to_s
 		end
