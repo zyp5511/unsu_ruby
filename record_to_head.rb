@@ -33,6 +33,10 @@ OptionParser.new do |opts|
 		options[:bywords] = true
 	end
 
+	opts.on("--group_threshold INTEGER",Integer, "assessing group by number of visual words") do |v|
+		options[:group_threshold] = v
+	end
+
 	opts.on("--bias", "torso bias applied or not") do
 		options[:bias] = true
 	end
@@ -60,13 +64,22 @@ puts "there are #{lcrecords.length} records"
 if options.has_key?(:bias)
 	puts "torso bias applied"
 end
+
+if options.has_key?(:group_threshold)
+	puts "group threshold added"
+	gpt = options[:group_threshold]
+else
+	puts "group threshold missing"
+	exit
+end
+
 File.open(exportfn, 'w') do |f|
 	lcrecords.each do |k,v|
 		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
 		if options.has_key?(:bywords)
-			group_set = v.groups.values.to_set.select{|y|y.rects.map{|x|x.type}.to_set.length>1}
+			group_set = v.groups.values.to_set.select{|y|y.rects.map{|x|x.type}.to_set.length>gpt}
 		else
-			group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
+			group_set = v.groups.values.to_set.select{|y|y.rects.length>gpt}
 		end
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
