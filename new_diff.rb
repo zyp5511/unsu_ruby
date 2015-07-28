@@ -20,8 +20,12 @@ OptionParser.new do |opts|
 		options[:predication] = v
 	end
 
-	opts.on("-t", "--threshold [VALUE]",Float, "transform file") do |v|
+	opts.on("-t", "--threshold [VALUE]",Float, "threshold on annotation(I know it's wired)") do |v|
 		options[:threshold] = v
+	end
+
+	opts.on("--th2 [VALUE]",Float, "threshold of predication to be compared") do |v|
+		options[:th2] = v
 	end
 
 	opts.on("-o", "--output FILENAME", "output file") do |v|
@@ -30,6 +34,10 @@ OptionParser.new do |opts|
 
 	opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
 		options[:verbose] = v
+	end
+
+	opts.on("--debug", "Run in debug mode") do |v|
+		options[:debug] = v
 	end
 
 	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v|
@@ -55,7 +63,14 @@ if options.has_key?(:threshold)
 else
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+
+if options.has_key?(:th2)
+	tt2 = options[:th2]
+	puts "threshold of predication #{tt2} is given"
+	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt2}]}] 
+else
+	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+end
 
 puts "there are #{lcrecords.length} records"
 
@@ -67,7 +82,6 @@ inter_c=0
 if !File.directory?(des)
 	FileUtils.mkdir(des)
 end
-
 
 fndir = File.join(des,'fn')
 if !File.directory?(fndir)
@@ -127,6 +141,8 @@ lcrecords.each do |k,v|
 			vid = v.select{|vr| vr.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
 			if vid.length==0
 				# miss found
+				#
+				# record missing with small size
 				if options.has_key?(:fnwidth)
 					fnrect << cvr if cvr.w < wt
 				else
@@ -144,19 +160,21 @@ lcrecords.each do |k,v|
 				end
 				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
-				begin
-					g_types = vid.first.type[1...-1].split(',').map(&:to_i)
-				rescue Exception => e
-					puts "=======================Error!====================="
-					puts g_types.inspect
-					puts e.backtrace.join("\n")
-					puts "=======================Error!====================="
-				end
-				g_types.each do |atype|
-					if tphist.has_key?(atype)
-						tphist[atype]+=1
-					else
-						tphist[atype]=1
+				if options.has_key?(:debug)
+					begin
+						g_types = vid.first.type[1...-1].split(',').map(&:to_i)
+					rescue Exception => e
+						puts "=======================Error!====================="
+						puts g_types.inspect
+						puts e.backtrace.join("\n")
+						puts "=======================Error!====================="
+					end
+					g_types.each do |atype|
+						if tphist.has_key?(atype)
+							tphist[atype]+=1
+						else
+							tphist[atype]=1
+						end
 					end
 				end
 			end
@@ -170,20 +188,23 @@ lcrecords.each do |k,v|
 	end
 	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
-		begin
-			g_types = g.type[1...-1].split(',').map(&:to_i)
-		rescue Exception => e
-			puts "=======================Error!====================="
-			puts g_types.inspect
-			puts g.type.inspect
-			puts e.backtrace.join("\n")
-			puts "=======================Error!====================="
-		end
-		g_types.each do |atype|
-			if fphist.has_key?(atype)
-				fphist[atype]+=1
-			else
-				fphist[atype]=1
+
+		if options.has_key?(:debug)
+			begin
+				g_types = g.type[1...-1].split(',').map(&:to_i)
+			rescue Exception => e
+				puts "=======================Error!====================="
+				puts g_types.inspect
+				puts g.type.inspect
+				puts e.backtrace.join("\n")
+				puts "=======================Error!====================="
+			end
+			g_types.each do |atype|
+				if fphist.has_key?(atype)
+					fphist[atype]+=1
+				else
+					fphist[atype]=1
+				end
 			end
 		end
 		draw_rect(oscimg,g)
@@ -221,14 +242,17 @@ if !options[:verbose].nil? and options[:verbose]
 			f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
 		end
 	end
-	File.open(File.join(des,'fphist.txt'),"w") do |f|
-		fphist.each do |k,v|
-			f.puts "#{k}\t:\t#{v}"
+
+	if options.has_key?(:debug)
+		File.open(File.join(des,'fphist.txt'),"w") do |f|
+			fphist.each do |k,v|
+				f.puts "#{k}\t:\t#{v}"
+			end
 		end
-	end
-	File.open(File.join(des,'tphist.txt'),"w") do |f|
-		tphist.each do |k,v|
-			f.puts "#{k}\t:\t#{v}"
+		File.open(File.join(des,'tphist.txt'),"w") do |f|
+			tphist.each do |k,v|
+				f.puts "#{k}\t:\t#{v}"
+			end
 		end
 	end
 end
