@@ -36,6 +36,10 @@ OptionParser.new do |opts|
 		options[:verbose] = v
 	end
 
+	opts.on("--info", "Run extreme verbosely") do |v|
+		options[:info] = true
+	end
+
 	opts.on("--debug", "Run in debug mode") do |v|
 		options[:debug] = v
 	end
@@ -55,6 +59,7 @@ des = options[:output]
 cvdat = options[:annotation]
 lcdat = options[:predication]
 
+puts "start processing file:#{lcdat}"
 # threshold for poselets: 3.6 added
 if options.has_key?(:threshold)
 	tt = options[:threshold]
@@ -72,7 +77,7 @@ else
 	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
 
-puts "there are #{lcrecords.length} records"
+puts "there are #{lcrecords.length} records" if options.has_key?(:info)
 
 cso=0
 osc=0
@@ -132,9 +137,9 @@ lcrecords.each do |k,v|
 	oscimg =  ori.clone
 	found = false
 	matched = Hash.new
-	if options.has_key?(:fnwidth)
-		fnrect<<k;
-	end
+	fnrect<<k;
+	tprect<<k;
+	fprect<<k;
 	if !cvrecords[k].nil?
 		cv_processed << k;
 		cvrecords[k].each do |cvr|
@@ -156,7 +161,7 @@ lcrecords.each do |k,v|
 				tprect << cvr
 				vid.each{|g|matched[g] = true;}
 				if vid.length > 1
-					puts "multiple matches in #{k}"
+					puts "multiple matches in #{k}" if options.has_key?(:info)
 				end
 				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
@@ -184,11 +189,11 @@ lcrecords.each do |k,v|
 			ori.write(File.join(des,'fn',k).to_s)
 		end
 	else 
-		puts "CV records not found for #{k}"
+		puts "postive annotatio not found for image #{k}" if options.has_key?(:info)
 	end
 	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
-
+		fprect<<g;
 		if options.has_key?(:debug)
 			begin
 				g_types = g.type[1...-1].split(',').map(&:to_i)
@@ -213,8 +218,16 @@ lcrecords.each do |k,v|
 	osc+= osctemp
 	## FP draw
 	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
+
+	## remove empty records
 	if fnrect[-1]==k
 		fnrect.pop
+	end
+	if tprect[-1]==k
+		tprect.pop
+	end
+	if fprect[-1]==k
+		fprect.pop
 	end
 end
 
@@ -224,9 +237,9 @@ cvrecords.each do |k,v|
 		cso_extra+=v.length 
 	end
 end
+
 if !options[:verbose].nil? and options[:verbose]
 	puts "outputing in verbose mode"
-
 	File.open(File.join(des,'fnstat.txt'),"w") do |f|
 		fnrect.each do |r|
 			if r.instance_of?(Rect)
@@ -239,10 +252,25 @@ if !options[:verbose].nil? and options[:verbose]
 	end
 	File.open(File.join(des,'tpstat.txt'),"w") do |f|
 		tprect.each do |r|
-			f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+			if r.instance_of?(Rect)
+				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+				f.puts r.to_s
+			else
+				f.puts r;
+			end
 		end
 	end
 
+	File.open(File.join(des,'fpstat.txt'),"w") do |f|
+		fprect.each do |r|
+			if r.instance_of?(Rect)
+				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
+				f.puts r.to_s
+			else
+				f.puts r;
+			end
+		end
+	end
 	if options.has_key?(:debug)
 		File.open(File.join(des,'fphist.txt'),"w") do |f|
 			fphist.each do |k,v|
