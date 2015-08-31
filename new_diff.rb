@@ -24,6 +24,10 @@ OptionParser.new do |opts|
 		options[:threshold] = v
 	end
 
+	opts.on("--annotheight [VALUE]",Float, "threshold height lower bound") do |v|
+		options[:annotheight] = v
+	end
+
 	opts.on("--th2 [VALUE]",Float, "threshold of predication to be compared") do |v|
 		options[:th2] = v
 	end
@@ -63,8 +67,12 @@ puts "start processing file:#{lcdat}"
 # threshold for poselets: 3.6 added
 if options.has_key?(:threshold)
 	tt = options[:threshold]
-	puts "threshold #{tt} is given"
+	puts "annotation threshold #{tt} is given"
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt}]}] 
+elsif options.has_key?(:annotheight)
+	tt = options[:annotheight]
+	puts "annotation hieght lower bound #{tt} is given"
+	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.h>tt}]}] 
 else
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
@@ -91,6 +99,11 @@ end
 fndir = File.join(des,'fn')
 if !File.directory?(fndir)
 	FileUtils.mkdir(fndir)
+end
+
+tpdir = File.join(des,'tp')
+if !File.directory?(tpdir)
+	FileUtils.mkdir(tpdir)
 end
 
 fpdir = File.join(des,'fp')
@@ -135,7 +148,9 @@ end
 lcrecords.each do |k,v|
 	ori = Magick::Image.read(File.join(src,k).to_s).first
 	oscimg =  ori.clone
-	found = false
+	tp_img =  ori.clone
+	fnfound = false
+	tpfound = false
 	matched = Hash.new
 	fnrect<<k;
 	tprect<<k;
@@ -154,12 +169,14 @@ lcrecords.each do |k,v|
 					fnrect << cvr
 				end
 				cso+=1
-				found = true;
+				fnfound = true;
 				draw_rect(ori,cvr)
 			else
 				# matched
 				tprect << cvr
-				vid.each{|g|matched[g] = true;}
+				tpfound = true;
+				draw_rect(tp_img,cvr)
+				vid.each{|g|matched[g] = true;draw_rect(tp_img,g)}
 				if vid.length > 1
 					puts "multiple matches in #{k}" if options.has_key?(:info)
 				end
@@ -184,9 +201,13 @@ lcrecords.each do |k,v|
 				end
 			end
 		end
-		if found
+		if fnfound
 			# export missing faces
 			ori.write(File.join(des,'fn',k).to_s)
+		end
+		if tpfound
+			# export missing faces
+			tp_img.write(File.join(des,'tp',k).to_s)
 		end
 	else 
 		puts "postive annotatio not found for image #{k}" if options.has_key?(:info)
@@ -235,6 +256,12 @@ cso_extra=0;
 cvrecords.each do |k,v| 
 	if !cv_processed.include? k
 		cso_extra+=v.length 
+		if (v.length>0)
+			fnrect<<k;
+			ori = Magick::Image.read(File.join(src,k).to_s).first
+			cvrecords[k].each{|cvr|fnrect<<k;draw_rect(ori,cvr)}
+			ori.write(File.join(des,'fn',k).to_s)
+		end
 	end
 end
 
