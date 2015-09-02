@@ -21,6 +21,10 @@ OptionParser.new do |opts|
 		options[:node] = v
 	end
 
+	opts.on("--corenode [FILENAME]", "core head node list file") do |v|
+		options[:corenode] = v
+	end
+
 	opts.on("-t", "--transform FILENAME", "transform file") do |v|
 		options[:transform] = v
 	end
@@ -29,8 +33,12 @@ OptionParser.new do |opts|
 		options[:output] = v
 	end
 
-	opts.on("--bywords", "assessing group by number of visual words") do |v|
+	opts.on("--bywords", "filtering group by number of visual words") do |v|
 		options[:bywords] = true
+	end
+
+	opts.on("--complex", "filtering group by more complex logic") do |v|
+		options[:complex] = true
 	end
 
 	opts.on("--group_threshold INTEGER",Integer, "assessing group by number of visual words") do |v|
@@ -57,6 +65,11 @@ exportfn= options[:output]
 table = LCTransformTable.loadMap(transfn,1006) #hard coded cluster number, should be changed later
 head = IO.readlines(headdat).map{|x|x.to_i}.to_set
 
+if options.has_key?(:corenode)
+	puts "core nodes defined"
+	corehead = IO.readlines(options[:corenode]).map{|x|x.to_i}.to_set
+end
+
 lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
 
 puts "there are #{lcrecords.length} records"
@@ -76,7 +89,9 @@ end
 File.open(exportfn, 'w') do |f|
 	lcrecords.each do |k,v|
 		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
-		if options.has_key?(:bywords)
+		if options.has_key?(:complex)
+			group_set = v.groups.values.to_set.select{|y|ns=y.rects.map{|x|x.type}.to_set;nsc = ns&corehead; ns.length>gpt||ns.length>gpt-1&&nsc.length>0;}
+		elsif options.has_key?(:bywords)
 			group_set = v.groups.values.to_set.select{|y|y.rects.map{|x|x.type}.to_set.length>gpt}
 		else
 			group_set = v.groups.values.to_set.select{|y|y.rects.length>gpt}
