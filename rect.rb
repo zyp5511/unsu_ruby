@@ -47,11 +47,7 @@ class Rect
 	def has_point x,y
 		dx = x - @x;
 		dy = y - @y;
-		if(dx>0&&@w>dx&&dy>0&&@h>dy)
-			return true;
-		else
-			return false;
-		end
+		return dx>0 && @w>dx && dy>0 && @h>dy
 	end
 
 	def distance_from x,y

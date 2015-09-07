@@ -221,25 +221,30 @@ class Record
 
 
 	## deprecated method, kept to run old diff.rb script
-	def group_rects  table
+	def group_rects  table,anchor_table
 		@groups = Hash.new
+		@anchor_groups = Hash.new
 		if @rects.nil?
 			raise "Empty goodset"
 		else
 			@inferred_rects = Hash.new
 			@rects.each do |r| 
 				ir = table.transform r
+				air = anchor_table.transform r
 				@inferred_rects[r]=ir;
-				if !@groups.values.empty?
-					g = @groups.values.find{|v|v.include ir}
+				if !@anchor_groups.values.empty?
+					rr, g = @anchor_groups.find{|k,v|v.include air}
 				else 
 					g = nil
 				end
 				if !g.nil?
-					@groups[r]=g
-					g.add ir
+					@anchor_groups[r]=g
+					@groups[r]=@groups[rr]
+					g.add air
+					@groups[rr].add ir
 				else
 					@groups[r]=RectGroup.new(ir)
+					@anchor_groups[r]=RectGroup.new(air)
 				end
 			end
 		end

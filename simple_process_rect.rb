@@ -69,7 +69,7 @@ elsif oper == "draw"
 			rescue Exception => e
 				puts "process_rect=======================Error!====================="
 				puts x.inspect
-				exit
+				puts e
 				puts e.backtrace.join("\n")
 				puts "process_rect=======================Error!====================="
 			end

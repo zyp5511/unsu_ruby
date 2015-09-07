@@ -29,6 +29,10 @@ OptionParser.new do |opts|
 		options[:transform] = v
 	end
 
+	opts.on("--anchor-transform [FILENAME]", "anchor transform file") do |v|
+		options[:anchor] = v
+	end
+
 	opts.on("-o", "--output FILENAME", "output file") do |v|
 		options[:output] = v
 	end
@@ -63,6 +67,13 @@ transfn = options[:transform]
 exportfn= options[:output]
 
 table = LCTransformTable.loadMap(transfn,1006) #hard coded cluster number, should be changed later
+
+if options.has_key?(:anchor)
+	puts "anchor table provided "
+	anchor_table = LCTransformTable.loadMap(options[:anchor],1006) #hard coded cluster number, should be changed later
+else 
+	anchor_table = table
+end
 head = IO.readlines(headdat).map{|x|x.to_i}.to_set
 
 if options.has_key?(:corenode)
@@ -70,7 +81,7 @@ if options.has_key?(:corenode)
 	corehead = IO.readlines(options[:corenode]).map{|x|x.to_i}.to_set
 end
 
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
+lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table,anchor_table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
 
 puts "there are #{lcrecords.length} records"
 
