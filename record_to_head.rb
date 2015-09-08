@@ -49,6 +49,10 @@ OptionParser.new do |opts|
 		options[:group_threshold] = v
 	end
 
+	opts.on("--margin INTEGER",Integer, "rect margins when grouping, 1=0.1*width or height") do |v|
+		options[:margin] = v
+	end
+
 	opts.on("--bias", "torso bias applied or not") do
 		options[:bias] = true
 	end
@@ -81,7 +85,14 @@ if options.has_key?(:corenode)
 	corehead = IO.readlines(options[:corenode]).map{|x|x.to_i}.to_set
 end
 
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table,anchor_table}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
+if options.has_key?(:margin)
+	margin = options[:margin].to_f/10
+	puts "rect margin #{margin} specified"
+else 
+	margin =0;
+end
+
+lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table,anchor_table,margin}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
 
 puts "there are #{lcrecords.length} records"
 

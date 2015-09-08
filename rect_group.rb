@@ -124,9 +124,9 @@ class RectGroup
 		#puts "==============================="
 	end
 
-	def include arect
+	def include arect,margin=0
 		if !@rects.empty?
-			return @rects.inject(false){|res,rec|res || (rec.include arect)}
+			return @rects.inject(false){|res,rec|res || (rec.include arect,margin)}
 		else 
 			return false
 		end

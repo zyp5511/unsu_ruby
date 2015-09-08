@@ -29,10 +29,11 @@ class Rect
 		Rect.new(ty,dis,x,y,w,h)
 	end
 
-	def include other
-		c1 = self.has_point other.x+(other.w/2),other.y+(other.h/2)
-		c2 = other.has_point self.x+(self.w/2),self.y+(self.h/2)
-		c1 || c2
+	def include other,margin=0
+		c1 = self.has_point other.x+(other.w/2),other.y+(other.h/2),margin
+		c2 = other.has_point self.x+(self.w/2),self.y+(self.h/2),margin
+		#c1 || c2
+		c1 && c2
 	end 
 
 	def to_s
@@ -44,10 +45,10 @@ class Rect
 		"#{@x}:#{@y}:#{@w}:#{@h}"
 	end
 
-	def has_point x,y
+	def has_point x,y,margin=0
 		dx = x - @x;
 		dy = y - @y;
-		return dx>0 && @w>dx && dy>0 && @h>dy
+		return dx>margin*@w && @w*(1-margin)>dx && dy>@h*margin && @h*(1-margin)>dy
 	end
 
 	def distance_from x,y

@@ -221,7 +221,7 @@ class Record
 
 
 	## deprecated method, kept to run old diff.rb script
-	def group_rects  table,anchor_table
+	def group_rects  table,anchor_table,margin=0
 		@groups = Hash.new
 		@anchor_groups = Hash.new
 		if @rects.nil?
@@ -233,7 +233,7 @@ class Record
 				air = anchor_table.transform r
 				@inferred_rects[r]=ir;
 				if !@anchor_groups.values.empty?
-					rr, g = @anchor_groups.find{|k,v|v.include air}
+					rr, g = @anchor_groups.find{|k,v|v.include(air,margin)}
 				else 
 					g = nil
 				end
