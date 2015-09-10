@@ -237,6 +237,11 @@ lcrecords.each do |k,v|
 	end
 	osctemp=v.length-v.select{|x|matched[x]}.length;
 	osc+= osctemp
+	## plot FP count
+	rdraw = Magick::Draw.new
+	rdraw.stroke('yellow').stroke_width(1)
+	rdraw.text(16,16,osctemp.to_s)
+	rdraw.draw(oscimg)
 	## FP draw
 	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
 
