@@ -28,6 +28,10 @@ OptionParser.new do |opts|
 		options[:annotheight] = v
 	end
 
+	opts.on("--predheight [VALUE]",Float, "predication threshold height lower bound") do |v|
+		options[:predheight] = v
+	end
+
 	opts.on("--th2 [VALUE]",Float, "threshold of predication to be compared") do |v|
 		options[:th2] = v
 	end
@@ -63,8 +67,7 @@ des = options[:output]
 cvdat = options[:annotation]
 lcdat = options[:predication]
 
-puts "start processing file:#{lcdat}"
-# threshold for poselets: 3.6 added
+# anntation filter
 if options.has_key?(:threshold)
 	tt = options[:threshold]
 	puts "annotation threshold #{tt} is given"
@@ -77,10 +80,23 @@ else
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
 
+puts "start processing file:#{lcdat}"
+# record filter 
+record_choosers = []
 if options.has_key?(:th2)
-	tt2 = options[:th2]
+	puts "threshold of predication #{options[:th2]} is given"
+	record_choosers << ->(x){x.dis>options[:th2]}
+end
+
+if options.has_key?(:predheight)
+	tt2 = options[:predheight]
+	puts "threshold of predication height #{options[:predheight]} is given"
+	record_choosers << ->(x){x.h>options[:predheight] }
+end
+
+if record_choosers.size>0
 	puts "threshold of predication #{tt2} is given"
-	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt2}]}] 
+	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|record_choosers.all?{|y|y.call(x)}}]}] 
 else
 	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
@@ -173,7 +189,8 @@ lcrecords.each do |k,v|
 				draw_rect(ori,cvr)
 			else
 				# matched
-				tprect << cvr
+				#tprect << cvr
+				vid.each{|r| tprect<<r}
 				tpfound = true;
 				draw_rect(tp_img,cvr)
 				vid.each{|g|matched[g] = true;draw_rect(tp_img,g)}
@@ -293,13 +310,17 @@ if !options[:verbose].nil? and options[:verbose]
 		end
 	end
 
+	fpcount = 0;
 	File.open(File.join(des,'fpstat.txt'),"w") do |f|
 		fprect.each do |r|
 			if r.instance_of?(Rect)
 				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
 				f.puts r.to_s
+				fpcount+=1
 			else
+				f.puts fpcount;
 				f.puts r;
+				fpcount = 0;
 			end
 		end
 	end
