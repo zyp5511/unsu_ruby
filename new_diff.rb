@@ -20,7 +20,7 @@ OptionParser.new do |opts|
 		options[:predication] = v
 	end
 
-	opts.on("-t", "--threshold [VALUE]",Float, "threshold on annotation(I know it's wired)") do |v|
+	opts.on("-t", "--threshold [VALUE]",Float, "threshold on annotation (I know it's wired)") do |v|
 		options[:threshold] = v
 	end
 
@@ -52,7 +52,7 @@ OptionParser.new do |opts|
 		options[:debug] = v
 	end
 
-	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v|
+	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v| #deprecated
 		options[:fnwidth] = v
 	end
 
@@ -70,27 +70,29 @@ lcdat = options[:predication]
 # anntation filter
 if options.has_key?(:threshold)
 	tt = options[:threshold]
-	puts "annotation threshold #{tt} is given"
+	puts "annotation score threshold #{tt} is given"
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt}]}] 
 elsif options.has_key?(:annotheight)
 	tt = options[:annotheight]
-	puts "annotation hieght lower bound #{tt} is given"
+	puts "annotation height lower bound #{tt} is given"
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.h>tt}]}] 
 else
 	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
 
 puts "start processing file:#{lcdat}"
+
 # record filter 
+#
 record_choosers = []
 if options.has_key?(:th2)
-	puts "threshold of predication #{options[:th2]} is given"
+	puts "predication score threshold #{options[:th2]} is given"
 	record_choosers << ->(x){x.dis>options[:th2]}
 end
 
 if options.has_key?(:predheight)
+	puts "predication height threshold #{options[:predheight]} is given"
 	tt2 = options[:predheight]
-	puts "threshold of predication height #{options[:predheight]} is given"
 	record_choosers << ->(x){x.h>options[:predheight] }
 end
 
@@ -99,6 +101,12 @@ if record_choosers.size>0
 	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|record_choosers.all?{|y|y.call(x)}}]}] 
 else
 	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+end
+
+#Deprecated: false negative threshold
+if options.has_key?(:fnwidth)
+	puts "false negative threshold #{options[:fnwidth]} used"
+	wt = options[:fnwidth]
 end
 
 puts "there are #{lcrecords.length} records" if options.has_key?(:info)
@@ -156,10 +164,6 @@ end
 cv_processed = Set.new()
 
 
-if options.has_key?(:fnwidth)
-	puts "false negative threshold #{options[:fnwidth]} used"
-	wt = options[:fnwidth]
-end
 
 lcrecords.each do |k,v|
 	ori = Magick::Image.read(File.join(src,k).to_s).first
