@@ -212,7 +212,10 @@ class Record
 	end
 
 	def self.seperate_records(src,lines,record_parser)
-		lines.map{|x|x.chomp}.chunk{|l|self.is_img? l}.each_slice(2).map{|a| puts a[0][1].inspect if a[0][1].length>1;record_parser.call(src,a[1][1].unshift(a[0][1].last))}
+		lines.map{|x|x.chomp}.chunk{|l|self.is_img? l}.each_slice(2).map do |a|
+		 	# puts a[0][1].inspect if a[0][1].length>1;
+			record_parser.call(src,a[1][1].unshift(a[0][1].last))
+		end
 	end
 
 	def self.is_img? l

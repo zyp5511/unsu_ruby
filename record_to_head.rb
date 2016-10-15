@@ -37,12 +37,9 @@ OptionParser.new do |opts|
 		options[:output] = v
 	end
 
-	opts.on("--bywords", "filtering group by number of visual words") do |v|
-		options[:bywords] = true
-	end
 
-	opts.on("--complex", "filtering group by more complex logic") do |v|
-		options[:complex] = true
+	opts.on("--gfilter FILTER", String, "group filtering strategy") do |v|
+		options[:gfilter] = v # options are: bywords, complex, strict
 	end
 
 	opts.on("--group_threshold INTEGER",Integer, "assessing group by number of visual words") do |v|
@@ -92,7 +89,15 @@ else
 	margin =0;
 end
 
-lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each{|r|r.pick_good_set head;r.group_rects table,anchor_table,margin}.select{|r|r.groups.values.to_set.length>0}.map{|r|[r.filename, r]}] 
+pred_list = Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select do |r|
+	r.rects!=nil &&
+		begin
+			r.pick_good_set head;
+			r.group_rects table,anchor_table,margin
+			r.groups.values.to_set.length>0
+	end
+end
+lcrecords = Hash[pred_list.map{|r|[r.filename, r]}]
 
 puts "there are #{lcrecords.length} records"
 
@@ -111,12 +116,26 @@ end
 File.open(exportfn, 'w') do |f|
 	lcrecords.each do |k,v|
 		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
-		if options.has_key?(:complex)
-			group_set = v.groups.values.to_set.select{|y|ns=y.rects.map{|x|x.type}.to_set;nsc = ns&corehead; ns.length>gpt||ns.length>gpt-1&&nsc.length>0;}
-		elsif options.has_key?(:bywords)
-			group_set = v.groups.values.to_set.select{|y|y.rects.map{|x|x.type}.to_set.length>gpt}
-		else
-			group_set = v.groups.values.to_set.select{|y|y.rects.length>gpt}
+		if options.has_key?(:gfilter) # bywords > gpt or > gpt-1 while have a corenode in it.
+			case options[:gfilter]
+			when "complex"
+				group_set = v.groups.values.to_set.select do |y|
+					ns=y.rects.map{|x|x.type}.to_set;
+					nsc = ns&corehead;
+					ns.length>gpt || ns.length>gpt-1&&nsc.length>0; 
+				end
+			when "bywords"
+				group_set = v.groups.values.to_set.select do |y|
+					y.rects.map{|x|x.type}.to_set.length>gpt
+				end
+			else
+				puts "filter not found"
+				exit
+			end
+		else # default, by number of rects in the group
+			group_set = v.groups.values.to_set.select do |y|
+				y.rects.length>gpt
+			end
 		end
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
