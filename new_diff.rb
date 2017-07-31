@@ -36,7 +36,7 @@ OptionParser.new do |opts|
 		options[:th2] = v
 	end
 
-	opts.on("-o", "--output FILENAME", "output file") do |v|
+	opts.on("-o", "--output FILENAME", "output directory") do |v|
 		options[:output] = v
 	end
 
@@ -50,6 +50,10 @@ OptionParser.new do |opts|
 
 	opts.on("--debug", "Run in debug mode") do |v|
 		options[:debug] = v
+	end
+
+	opts.on("--plot", "Plot the result") do |v|
+		options[:plot] = v
 	end
 
 	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v| #deprecated
@@ -116,6 +120,7 @@ osc=0
 inter=0
 inter_c=0
 
+
 if !File.directory?(des)
 	FileUtils.mkdir(des)
 end
@@ -149,8 +154,8 @@ def draw_rect(ori,cvr)
 		rdraw.fill("transparent")
 		rdraw.rectangle(cvr.x,cvr.y,cvr.x+cvr.w-1,cvr.y+cvr.h-1)
 		#rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.type.to_s)
-		rdraw.text(cvr.x+1,cvr.y+1,cvr.type.to_s) if !cvr.type.nil?
-		rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.dis.to_s) if !cvr.dis.nil?
+		rdraw.text(cvr.x+1,cvr.y+1,cvr.type.to_s.inspect) if !cvr.type.nil?
+		rdraw.text(cvr.x+1,cvr.y+cvr.h-20,cvr.dis.to_s.inspect) if !cvr.dis.nil?
 		rdraw.draw(ori)
 	rescue Exception => e
 		puts "draw_rect=======================Error!====================="
@@ -166,9 +171,12 @@ cv_processed = Set.new()
 
 
 lcrecords.each do |k,v|
-	ori = Magick::Image.read(File.join(src,k).to_s).first
-	oscimg =  ori.clone
-	tp_img =  ori.clone
+
+	if options.has_key?(:plot)
+		ori = Magick::Image.read(File.join(src,k).to_s).first
+		oscimg =  ori.clone
+		tp_img =  ori.clone
+	end
 	fnfound = false
 	tpfound = false
 	matched = Hash.new
@@ -190,14 +198,19 @@ lcrecords.each do |k,v|
 				end
 				cso+=1
 				fnfound = true;
-				draw_rect(ori,cvr)
+				if options.has_key?(:plot)
+					draw_rect(ori,cvr)
+				end
 			else
 				# matched
 				#tprect << cvr
 				vid.each{|r| tprect<<r}
 				tpfound = true;
-				draw_rect(tp_img,cvr)
-				vid.each{|g|matched[g] = true;draw_rect(tp_img,g)}
+				vid.each{|g|matched[g] = true}
+				if options.has_key?(:plot)
+					draw_rect(tp_img,cvr)
+					vid.each{|g|draw_rect(tp_img,g)}
+				end
 				if vid.length > 1
 					puts "multiple matches in #{k}" if options.has_key?(:info)
 				end
@@ -222,13 +235,15 @@ lcrecords.each do |k,v|
 				end
 			end
 		end
-		if fnfound
-			# export missing faces
-			ori.write(File.join(des,'fn',k).to_s)
-		end
-		if tpfound
-			# export missing faces
-			tp_img.write(File.join(des,'tp',k).to_s)
+		if options.has_key?(:plot)
+			if fnfound
+				# export missing faces
+				ori.write(File.join(des,'fn',k).to_s)
+			end
+			if tpfound
+				# export missing faces
+				tp_img.write(File.join(des,'tp',k).to_s)
+			end
 		end
 	else 
 		puts "postive annotatio not found for image #{k}" if options.has_key?(:info)
@@ -254,17 +269,21 @@ lcrecords.each do |k,v|
 				end
 			end
 		end
-		draw_rect(oscimg,g)
+		if options.has_key?(:plot)
+			draw_rect(oscimg,g)
+		end
 	end
 	osctemp=v.length-v.select{|x|matched[x]}.length;
 	osc+= osctemp
 	## plot FP count
-	rdraw = Magick::Draw.new
-	rdraw.stroke('yellow').stroke_width(1)
-	rdraw.text(16,16,osctemp.to_s)
-	rdraw.draw(oscimg)
-	## FP draw
-	oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
+	if options.has_key?(:plot)
+		rdraw = Magick::Draw.new
+		rdraw.stroke('yellow').stroke_width(1)
+		rdraw.text(16,16,osctemp.to_s.inspect)
+		rdraw.draw(oscimg)
+		## FP draw
+		oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
+	end
 
 	## remove empty records
 	if fnrect[-1]==k
@@ -342,10 +361,10 @@ if !options[:verbose].nil? and options[:verbose]
 	end
 end
 
-puts "extra missing #{cso_extra}"
 cso+=cso_extra
 puts "True Positive: #{inter}"
 puts "True Positive Distance: #{inter_c}"
 puts "Missing: #{cso}"
 puts "False Positive: #{osc}"
+puts "extra missing #{cso_extra}"
 

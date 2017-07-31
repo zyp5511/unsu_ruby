@@ -128,6 +128,10 @@ File.open(exportfn, 'w') do |f|
 				group_set = v.groups.values.to_set.select do |y|
 					y.rects.map{|x|x.type}.to_set.length>gpt
 				end
+			when "byrects"
+				group_set = v.groups.values.to_set.select do |y|
+					y.rects.length>gpt
+				end
 			else
 				puts "filter not found"
 				exit

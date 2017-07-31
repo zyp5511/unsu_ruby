@@ -37,7 +37,7 @@ else
 		complex)
 			echo "Complex mode: ours_on_cele_complex.sh"
 			### ours_on_cele_complex.sh
-			if [ -z "$2" ]
+			if [ -n "$2" ]
 			then
 				i=$2
 			else 
