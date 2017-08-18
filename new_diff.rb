@@ -56,6 +56,10 @@ OptionParser.new do |opts|
 		options[:plot] = v
 	end
 
+	opts.on("--crop", "Crop the result") do |v|
+		options[:crop] = v
+	end
+
 	opts.on("--fnwidth [VALUE]", Float, "false negative width ") do |v| #deprecated
 		options[:fnwidth] = v
 	end
@@ -144,8 +148,6 @@ fnrect = [];
 fprect = [];
 tprect = [];
 
-fphist = {};
-tphist = {};
 
 def draw_rect(ori,cvr)
 	begin
@@ -166,13 +168,18 @@ def draw_rect(ori,cvr)
 
 end
 
+def crop_rect(ori,rect,subdir,filename)
+	temp = ori.crop(rect.x,rect.y,rect.w,rect.h,true)
+	#type = rect.type
+	temp.write("#{File.join(subdir,File.basename(filename, File.extname(filename))).to_s}_#{rect.x}+#{rect.y}+#{rect.w}x#{rect.h}#{File.extname(filename)}")
+end
+
 cv_processed = Set.new()
 
 
 
 lcrecords.each do |k,v|
-
-	if options.has_key?(:plot)
+	if options.has_key?(:plot) or options.has_key?(:crop)
 		ori = Magick::Image.read(File.join(src,k).to_s).first
 		oscimg =  ori.clone
 		tp_img =  ori.clone
@@ -210,29 +217,14 @@ lcrecords.each do |k,v|
 				if options.has_key?(:plot)
 					draw_rect(tp_img,cvr)
 					vid.each{|g|draw_rect(tp_img,g)}
+				elsif options.has_key?(:crop)
+					vid.each{|g|crop_rect(tp_img,g,tpdir,k)}
 				end
 				if vid.length > 1
 					puts "multiple matches in #{k}" if options.has_key?(:info)
 				end
 				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
-				if options.has_key?(:debug)
-					begin
-						g_types = vid.first.type[1...-1].split(',').map(&:to_i)
-					rescue Exception => e
-						puts "=======================Error!====================="
-						puts g_types.inspect
-						puts e.backtrace.join("\n")
-						puts "=======================Error!====================="
-					end
-					g_types.each do |atype|
-						if tphist.has_key?(atype)
-							tphist[atype]+=1
-						else
-							tphist[atype]=1
-						end
-					end
-				end
 			end
 		end
 		if options.has_key?(:plot)
@@ -251,26 +243,10 @@ lcrecords.each do |k,v|
 	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
 		fprect<<g;
-		if options.has_key?(:debug)
-			begin
-				g_types = g.type[1...-1].split(',').map(&:to_i)
-			rescue Exception => e
-				puts "=======================Error!====================="
-				puts g_types.inspect
-				puts g.type.inspect
-				puts e.backtrace.join("\n")
-				puts "=======================Error!====================="
-			end
-			g_types.each do |atype|
-				if fphist.has_key?(atype)
-					fphist[atype]+=1
-				else
-					fphist[atype]=1
-				end
-			end
-		end
 		if options.has_key?(:plot)
 			draw_rect(oscimg,g)
+		elsif options.has_key?(:crop)
+			crop_rect(oscimg,g,fpdir,k)
 		end
 	end
 	osctemp=v.length-v.select{|x|matched[x]}.length;
@@ -347,18 +323,6 @@ if !options[:verbose].nil? and options[:verbose]
 			end
 		end
 	end
-	if options.has_key?(:debug)
-		File.open(File.join(des,'fphist.txt'),"w") do |f|
-			fphist.each do |k,v|
-				f.puts "#{k}\t:\t#{v}"
-			end
-		end
-		File.open(File.join(des,'tphist.txt'),"w") do |f|
-			tphist.each do |k,v|
-				f.puts "#{k}\t:\t#{v}"
-			end
-		end
-	end
 end
 
 cso+=cso_extra
@@ -366,5 +330,5 @@ puts "True Positive: #{inter}"
 puts "True Positive Distance: #{inter_c}"
 puts "Missing: #{cso}"
 puts "False Positive: #{osc}"
-puts "extra missing #{cso_extra}"
+puts "Extra missing #{cso_extra}"
 

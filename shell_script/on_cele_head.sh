@@ -6,6 +6,7 @@ annot_all='/home/lichao/smaller/vault/nips/old/annot_all.txt'
 annot_cele='/home/lichao/smaller/vault/nips/old/annot_cele.txt'
 head_clusters='/home/lichao/git/posecpp/model/head_clusters_46.txt'
 head_transforms='/home/lichao/git/posecpp/model/head_transforms_46.txt'
+options=' --crop --predheight 150'
 
 if [ $# -eq 0 ]
 then
@@ -30,8 +31,8 @@ else
 			echo "margin set: "$margin
 			for((i=1;i<5;i++)) do
 				ruby ../record_to_head.rb -s $img_dir -r $work_dir/scan_cele_${step}pix.txt -n $head_clusters -t $head_transforms -o $work_dir/head_cele_${step}pix_byrects_$i.txt --gfilter byrects --group_threshold $i --margin $margin 
-				suffix=head_cele_${step}pix_byrects_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
-				suffix=head_cele_${step}pix_byrects_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_byrects_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_byrects_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
 			done
 			;;
 
@@ -53,8 +54,8 @@ else
 			echo "margin set: "$margin
 			for((i=1;i<5;i++)) do
 				ruby ../record_to_head.rb -s $img_dir -r $work_dir/scan_cele_${step}pix.txt -n $head_clusters -t $head_transforms -o $work_dir/head_cele_${step}pix_bywords_$i.txt --gfilter bywords --group_threshold $i --margin $margin 
-				suffix=head_cele_${step}pix_bywords_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
-				suffix=head_cele_${step}pix_bywords_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_bywords_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_bywords_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
 			done
 			;;
 
@@ -84,14 +85,14 @@ else
 			echo "margin set: "$margin
 			for((i=1;i<5;i++)) do
 				ruby ../record_to_head.rb -s $img_dir -r $work_dir/scan_cele_${step}pix.txt -n $head_clusters -t $head_transforms -o $work_dir/head_cele_${step}pix_bywords_$i.txt --gfilter complex --group_threshold $i --margin $margin 
-				suffix=head_cele_${step}pix_bywords_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
-				suffix=head_cele_${step}pix_bywords_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_bywords_$i;dir=all_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_all -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
+				suffix=head_cele_${step}pix_bywords_$i;dir=cele_$suffix;rm -rf $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir -a $annot_cele -p $work_dir/$suffix.txt -v $options |tee $dir\_margin_$margin.txt 
 			done
 
 			for((j=0;j<4;j++)) do
 				##for((i=1;i<5;i++)) do
 				ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms  -o /home/lichao/scratch/nips/torso_cele_8pix_complex_$i\_$j.txt --gfilter complex  --bias --group_threshold $i --margin $j
-				suffix='torso_cele_8pix_complex_'$i'_'$j;dir=all_$suffix;rm -r /home/lichao/scratch/nips/$dir;ruby ../new_diff.rb -s $img_dir -o /home/lichao/scratch/nips/$dir/ -a $annot -p /home/lichao/scratch/nips/$suffix.txt -v   --annotheight 200|tee complex_$i\_$j.txt 
+				suffix='torso_cele_8pix_complex_'$i'_'$j;dir=all_$suffix;rm -r /home/lichao/scratch/nips/$dir;ruby ../new_diff.rb -s $img_dir -o /home/lichao/scratch/nips/$dir/ -a $annot -p /home/lichao/scratch/nips/$suffix.txt -v $options   --annotheight 200|tee complex_$i\_$j.txt 
 				##done
 			done
 			;;
@@ -108,7 +109,7 @@ else
 			for((i=1;i<5;i++)) do
 				##for((i=1;i<5;i++)) do
 				ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms  -o /home/lichao/scratch/nips/torso_cele_8pix_complex_$i\_$j.txt --gfilter complex  --bias --group_threshold $i --margin $j
-				suffix='torso_cele_8pix_complex_'$i'_'$j;dir=all_$suffix;rm -r /home/lichao/scratch/nips/$dir;ruby ../new_diff.rb -s $img_dir -o /home/lichao/scratch/nips/$dir/ -a $annot -p /home/lichao/scratch/nips/$suffix.txt -v   --annotheight 200
+				suffix='torso_cele_8pix_complex_'$i'_'$j;dir=all_$suffix;rm -r /home/lichao/scratch/nips/$dir;ruby ../new_diff.rb -s $img_dir -o /home/lichao/scratch/nips/$dir/ -a $annot -p /home/lichao/scratch/nips/$suffix.txt -v $options   --annotheight 200
 				##done
 			done
 			;;

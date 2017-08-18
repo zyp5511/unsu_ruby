@@ -9,13 +9,14 @@ src = ARGV[2]
 des = ARGV[3]
 report = ARGV[4]
 
-records = Record::seperate_records(src,des,IO.foreach(report))
+records = Record::seperate_records(src,IO.foreach(report),Record::parsers[:origin])
 puts "there are #{records.length} records"
 
 #head nodes, legacy
 clufn= ARGV[5]
 head = IO.readlines(clufn).map{|x|x.to_i}.to_set
 c = 0;
+
 # all pair stat table and selected network2 edges
 begin
 	netfn = ARGV[7]
@@ -25,6 +26,7 @@ begin
 rescue Exception => e
 	puts e
 end
+
 # global position for each node
 begin
 	global_fn = ARGV[9]
@@ -32,6 +34,7 @@ begin
 rescue Exception => e
 	puts e
 end
+
 # voronoi table for group quality assessment
 begin
 	vorofn = ARGV[10]
@@ -60,12 +63,12 @@ elsif oper == "draw_group_net_global"
 					end
 				end
 			end
-			x.export
+			x.export des
 		end
 	}
 elsif oper == "draw_group_quality"
-	process = ->(x){
-		x.group_rects_with_graph  nettable
+	process = ->(x){ 
+		x.group_rects_with_graph(nettable)
 		goodgroups=x.groups.values.to_set
 		bettergroups = goodgroups.select{|g|g.rects.map{|x|x.type}.to_set.length>2}
 		if !bettergroups.empty?
@@ -87,7 +90,7 @@ elsif oper == "draw_group_quality"
 				x.draw_group(g,x.colortab[(i+1)*31],"#{gqual}")
 				puts "#{x.filename}\t#{i}\t#{gqual}"
 			end
-			x.export
+			x.export des
 		end
 	}
 elsif oper == "draw_group_car"
@@ -113,7 +116,7 @@ elsif oper == "draw_group_car"
 				x.draw_group(g,x.colortab[(i+1)*31],"#{gqual}")
 				puts "#{x.filename}\t#{i}\t#{gqual}"
 			end
-			x.export
+			x.export des
 		end
 	}
 end

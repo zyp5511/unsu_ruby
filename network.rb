@@ -122,6 +122,6 @@ class Network
 			trans[rule.from*10000+rule.to] = rule  
 			trans[rule.to*10000+rule.from] = rule.inv 
 		end
-		Network.new(trans)
+		return Network.new(trans)
 	end
 end
