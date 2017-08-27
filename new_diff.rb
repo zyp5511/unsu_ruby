@@ -48,10 +48,6 @@ OptionParser.new do |opts|
 		options[:info] = true
 	end
 
-	opts.on("--debug", "Run in debug mode") do |v|
-		options[:debug] = v
-	end
-
 	opts.on("--plot", "Plot the result") do |v|
 		options[:plot] = v
 	end
@@ -79,13 +75,13 @@ lcdat = options[:predication]
 if options.has_key?(:threshold)
 	tt = options[:threshold]
 	puts "annotation score threshold #{tt} is given"
-	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt}]}] 
+	annot_records = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.dis>tt}]}] 
 elsif options.has_key?(:annotheight)
 	tt = options[:annotheight]
 	puts "annotation height lower bound #{tt} is given"
-	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.h>tt}]}] 
+	annot_records = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|x.h>tt}]}] 
 else
-	cvrecords = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+	annot_records = Hash[Record::seperate_records(src,IO.foreach(cvdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
 
 puts "start processing file:#{lcdat}"
@@ -105,26 +101,25 @@ if options.has_key?(:predheight)
 end
 
 if record_choosers.size>0
-	puts "threshold of predication #{tt2} is given"
-	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|record_choosers.all?{|y|y.call(x)}}]}] 
+	pred_records = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects.select{|x|record_choosers.all?{|y|y.call(x)}}]}] 
 else
-	lcrecords = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
+	pred_records = Hash[Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:cv]).map{|r|[r.filename, r.rects]}] 
 end
 
-#Deprecated: false negative threshold
+# Deprecated: false negative threshold
 if options.has_key?(:fnwidth)
 	puts "false negative threshold #{options[:fnwidth]} used"
 	wt = options[:fnwidth]
 end
 
-puts "there are #{lcrecords.length} records" if options.has_key?(:info)
+puts "there are #{pred_records.length} records" if options.has_key?(:info)
 
 cso=0
 osc=0
 inter=0
-inter_c=0
 
 
+# Created needed folders.
 if !File.directory?(des)
 	FileUtils.mkdir(des)
 end
@@ -143,10 +138,6 @@ fpdir = File.join(des,'fp')
 if !File.directory?(fpdir)
 	FileUtils.mkdir(fpdir)
 end
-
-fnrect = [];
-fprect = [];
-tprect = [];
 
 
 def draw_rect(ori,cvr)
@@ -174,15 +165,19 @@ def crop_rect(ori,rect,subdir,filename)
 	temp.write("#{File.join(subdir,File.basename(filename, File.extname(filename))).to_s}_#{rect.x}+#{rect.y}+#{rect.w}x#{rect.h}#{File.extname(filename)}")
 end
 
-cv_processed = Set.new()
+fnrect = [];
+fprect = [];
+tprect = [];
+
+annot_processed = Set.new()
 
 
 
-lcrecords.each do |k,v|
+pred_records.each do |k,v|
 	if options.has_key?(:plot) or options.has_key?(:crop)
-		ori = Magick::Image.read(File.join(src,k).to_s).first
-		oscimg =  ori.clone
-		tp_img =  ori.clone
+		fn_img = Magick::Image.read(File.join(src,k).to_s).first
+		fp_img =  fn_img.clone
+		tp_img =  fn_img.clone
 	end
 	fnfound = false
 	tpfound = false
@@ -190,9 +185,9 @@ lcrecords.each do |k,v|
 	fnrect<<k;
 	tprect<<k;
 	fprect<<k;
-	if !cvrecords[k].nil?
-		cv_processed << k;
-		cvrecords[k].each do |cvr|
+	if !annot_records[k].nil?
+		annot_processed << k;
+		annot_records[k].each do |cvr|
 			vid = v.select{|vr| vr.has_point cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)}
 			if vid.length==0
 				# miss found
@@ -206,7 +201,7 @@ lcrecords.each do |k,v|
 				cso+=1
 				fnfound = true;
 				if options.has_key?(:plot)
-					draw_rect(ori,cvr)
+					draw_rect(fn_img,cvr)
 				end
 			else
 				# matched
@@ -223,14 +218,13 @@ lcrecords.each do |k,v|
 				if vid.length > 1
 					puts "multiple matches in #{k}" if options.has_key?(:info)
 				end
-				inter_c+=vid.first.distance_from cvr.x+(cvr.w/2),cvr.y+(cvr.h/2)
 				inter+=1
 			end
 		end
 		if options.has_key?(:plot)
 			if fnfound
 				# export missing faces
-				ori.write(File.join(des,'fn',k).to_s)
+				fn_img.write(File.join(des,'fn',k).to_s)
 			end
 			if tpfound
 				# export missing faces
@@ -244,9 +238,9 @@ lcrecords.each do |k,v|
 		#export false alert
 		fprect<<g;
 		if options.has_key?(:plot)
-			draw_rect(oscimg,g)
+			draw_rect(fp_img,g)
 		elsif options.has_key?(:crop)
-			crop_rect(oscimg,g,fpdir,k)
+			crop_rect(fp_img,g,fpdir,k)
 		end
 	end
 	osctemp=v.length-v.select{|x|matched[x]}.length;
@@ -256,9 +250,9 @@ lcrecords.each do |k,v|
 		rdraw = Magick::Draw.new
 		rdraw.stroke('yellow').stroke_width(1)
 		rdraw.text(16,16,osctemp.to_s.inspect)
-		rdraw.draw(oscimg)
+		rdraw.draw(fp_img)
 		## FP draw
-		oscimg.write(File.join(des,"fp",k).to_s) if osctemp>0
+		fp_img.write(File.join(des,"fp",k).to_s) if osctemp>0
 	end
 
 	## remove empty records
@@ -274,14 +268,14 @@ lcrecords.each do |k,v|
 end
 
 cso_extra=0;
-cvrecords.each do |k,v| 
-	if !cv_processed.include? k
+annot_records.each do |k,v| 
+	if !annot_processed.include? k
 		cso_extra+=v.length 
 		if (v.length>0)
 			fnrect<<k;
-			ori = Magick::Image.read(File.join(src,k).to_s).first
-			cvrecords[k].each{|cvr|fnrect<<k;draw_rect(ori,cvr)}
-			ori.write(File.join(des,'fn',k).to_s)
+			fn_img = Magick::Image.read(File.join(src,k).to_s).first
+			annot_records[k].each{|cvr|fnrect<<k;draw_rect(fn_img,cvr)}
+			fn_img.write(File.join(des,'fn',k).to_s)
 		end
 	end
 end
@@ -327,8 +321,9 @@ end
 
 cso+=cso_extra
 puts "True Positive: #{inter}"
-puts "True Positive Distance: #{inter_c}"
 puts "Missing: #{cso}"
 puts "False Positive: #{osc}"
 puts "Extra missing #{cso_extra}"
+puts "-"*25
+3.times {puts}
 

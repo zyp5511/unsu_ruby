@@ -106,7 +106,6 @@ if options.has_key?(:bias)
 end
 
 if options.has_key?(:group_threshold)
-	puts "group threshold added"
 	gpt = options[:group_threshold]
 else
 	puts "group threshold missing"
