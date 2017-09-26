@@ -1,13 +1,13 @@
-work_dir='/home/lichao/smaller/vault/cele2017'
-img_dir='/home/lichao/smaller/vault/nips/data/test/'
+work_dir='/home/lichao/research/vault/cele2017'
+img_dir='/home/lichao/research/vault/nips/data/test/'
 #nips_clusters='/home/lichao/git/posecpp/model/nips_clusters.txt'
 #nips_transforms='/home/lichao/git/posecpp/model/nips_transforms.txt'
-annot_all='/home/lichao/smaller/vault/nips/old/annot_all.txt'
-annot_cele='/home/lichao/smaller/vault/nips/old/annot_cele.txt'
+annot_all='/home/lichao/research/vault/nips/old/annot_all.txt'
+annot_cele='/home/lichao/research/vault/nips/old/annot_cele.txt'
 head_clusters='/home/lichao/git/posecpp/model/head_clusters_46.txt'
 head_transforms='/home/lichao/git/posecpp/model/head_transforms_46.txt'
-options=' --crop --predheight 150'
-#options=''
+#options=' --crop --predheight 150'
+options=''
 
 if [ $# -eq 0 ]
 then
