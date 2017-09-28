@@ -6,8 +6,11 @@ nips_transforms='/home/lichao/git/posecpp/model/nips_transforms.txt'
 annot_all=$work_dir'/annot_cele_torso_all.txt'
 annot_frontal=$work_dir'/annot_cele_torso_frontal.txt'
 head_clusters='/home/lichao/git/posecpp/model/head_clusters_46.txt'
-#options=''
-options=' --plot'
+options=''
+#options=' --plot'
+
+h3d_img_dir='/home/lichao/scratch/h3d/images/'
+annot_h3d='~/scratch/h3d/annot_torso_h3d.txt'
 
 if [ $# -eq 0 ]
 then
@@ -60,10 +63,9 @@ else
 		headanchor)
 			echo "Head anchored complex mode: ours_on_cele_complex_headanchored.sh"
 			### ours_on_cele_complex_head_anchored.sh
-			for((i=1;i<5;i++)) do
-				ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms --anchor-transform /home/lichao/git/posecpp/model/nips_head_transforms.txt -o $work_dir/torso_cele_8pix_headanchor_$i.txt --gfilter complex  --bias --group_threshold $i 
-				suffix='torso_cele_8pix_headanchor_'$i;dir=all_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot -p $work_dir/$suffix.txt -v   $options
-			done
+			ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms --anchor-transform /home/lichao/git/posecpp/model/nips_head_transforms.txt -o $work_dir/torso_cele_${step}pix_headanchor_$i.txt --gfilter complex  --bias --group_threshold $i 
+			suffix=torso_cele_${step}pix_headanchor_$i;dir=all_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_all -p $work_dir/$suffix.txt -v   $options
+			suffix=torso_cele_${step}pix_headanchor_$i;dir=frontal_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_frontal -p $work_dir/$suffix.txt -v   $options
 			;;
 
 		haha)

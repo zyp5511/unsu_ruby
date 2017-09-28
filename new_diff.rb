@@ -171,9 +171,10 @@ tprect = [];
 
 annot_processed = Set.new()
 
-
-
-pred_records.each do |k,v|
+res = pred_records.map do |k,v|
+	osc = 0 # fp
+	cso = 0 # fn
+	inter = 0 # tp 
 	if options.has_key?(:plot) or options.has_key?(:crop)
 		fn_img = Magick::Image.read(File.join(src,k).to_s).first
 		fp_img =  fn_img.clone
@@ -227,12 +228,12 @@ pred_records.each do |k,v|
 				fn_img.write(File.join(des,'fn',k).to_s)
 			end
 			if tpfound
-				# export missing faces
+				# export dectected faces
 				tp_img.write(File.join(des,'tp',k).to_s)
 			end
 		end
 	else 
-		puts "postive annotatio not found for image #{k}" if options.has_key?(:info)
+		puts "postive annotation not found for image #{k}" if options.has_key?(:info)
 	end
 	v.select{|x|!matched[x]}.each do |g|
 		#export false alert
@@ -265,8 +266,15 @@ pred_records.each do |k,v|
 	if fprect[-1]==k
 		fprect.pop
 	end
+	[inter, osc, cso]
 end
 
+res = res.transpose
+inter = res[0].sum
+osc = res[1].sum
+cso = res[2].sum
+
+## images on which no positive is detected
 cso_extra=0;
 annot_records.each do |k,v| 
 	if !annot_processed.include? k
@@ -280,43 +288,27 @@ annot_records.each do |k,v|
 	end
 end
 
+def output_stat(fn, rects)
+	ct = 0;
+	File.open(fn, "w") do |f|
+		rects.each do |r|
+			if r.instance_of?(Rect)
+				f.puts r.to_s
+				ct += 1
+			else
+				f.puts ct
+				f.puts r
+				ct = 0
+			end
+		end
+	end
+end
+
 if !options[:verbose].nil? and options[:verbose]
 	puts "outputing in verbose mode"
-	File.open(File.join(des,'fnstat.txt'),"w") do |f|
-		fnrect.each do |r|
-			if r.instance_of?(Rect)
-				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
-				f.puts r.to_s
-			else
-				f.puts r;
-			end
-		end
-	end
-	File.open(File.join(des,'tpstat.txt'),"w") do |f|
-		tprect.each do |r|
-			if r.instance_of?(Rect)
-				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
-				f.puts r.to_s
-			else
-				f.puts r;
-			end
-		end
-	end
-
-	fpcount = 0;
-	File.open(File.join(des,'fpstat.txt'),"w") do |f|
-		fprect.each do |r|
-			if r.instance_of?(Rect)
-				#f.puts "#{r.w}\t#{r.h}\t#{r.dis}"
-				f.puts r.to_s
-				fpcount+=1
-			else
-				f.puts fpcount;
-				f.puts r;
-				fpcount = 0;
-			end
-		end
-	end
+	output_stat(File.join(des,'fnstat.txt'), fnrect)
+	output_stat(File.join(des,'tpstat.txt'), tprect)
+	output_stat(File.join(des,'fpstat.txt'), fprect)
 end
 
 cso+=cso_extra
@@ -325,5 +317,7 @@ puts "Missing: #{cso}"
 puts "False Positive: #{osc}"
 puts "Extra missing #{cso_extra}"
 puts "-"*25
+
+
 3.times {puts}
 

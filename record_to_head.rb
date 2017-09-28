@@ -4,6 +4,7 @@ require 'fileutils'
 require_relative 'record'
 require_relative 'transform_old'
 require 'optparse'
+require 'parallel'
 
 options = {}
 OptionParser.new do |opts|
@@ -89,14 +90,16 @@ else
 	margin =0;
 end
 
-pred_list = Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin]).select do |r|
-	r.rects!=nil &&
+rec_list = Record::seperate_records(src,IO.foreach(lcdat),Record::parsers[:origin])
+pred_list = Parallel.map(rec_list) do |r|
+	[r.rects!=nil &&
 		begin
 			r.pick_good_set head;
 			r.group_rects table,anchor_table,margin
 			r.groups.values.to_set.length>0
-	end
-end
+	end,r]
+end.select{|criteria, r| criteria}.map{|c,r|r}
+
 lcrecords = Hash[pred_list.map{|r|[r.filename, r]}]
 
 puts "there are #{lcrecords.length} records"
@@ -113,7 +116,7 @@ else
 end
 
 File.open(exportfn, 'w') do |f|
-	lcrecords.each do |k,v|
+	res = Parallel.map(lcrecords) do |k,v|
 		#group_set = v.groups.values.to_set.select{|y|y.rects.length>1}
 		if options.has_key?(:gfilter) # bywords > gpt or > gpt-1 while have a corenode in it.
 			case options[:gfilter]
@@ -140,6 +143,9 @@ File.open(exportfn, 'w') do |f|
 				y.rects.length>gpt
 			end
 		end
+		[k,group_set]
+	end
+	res.each do |k, group_set|
 		f.puts(k) if group_set.length>0
 		group_set.each do |g|
 			g.aggregate
