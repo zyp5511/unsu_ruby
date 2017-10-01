@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
-gem 'rmagick'
-gem 'rgl'
 gem 'parallel'
+gem 'rgl'
+gem 'rmagick'

@@ -8,38 +8,37 @@ require 'optparse'
 
 options = {}
 OptionParser.new do |opts|
-	opts.banner = "Usage: example.rb [options]"
+  opts.banner = 'Usage: example.rb [options]'
 
-	opts.on("-i", "--input FILENAME", "input file") do |v|
-		options[:input] = v
-	end
+  opts.on('-i', '--input FILENAME', 'input file') do |v|
+    options[:input] = v
+  end
 
-	opts.on("-o", "--output FILENAME", "output file") do |v|
-		options[:output] = v
-	end
+  opts.on('-o', '--output FILENAME', 'output file') do |v|
+    options[:output] = v
+  end
 
-	opts.on("-h", "--help", "Prints this help") do
-		puts opts
-		exit
-	end
+  opts.on('-h', '--help', 'Prints this help') do
+    puts opts
+    exit
+  end
 end.parse!
 
 lcdat = options[:input]
 listfn = options[:output]
 
-File.open(listfn,'w') do |f|
-	Record::seperate_records("",IO.foreach(lcdat),Record::parsers[:origin]).select{|r|r.rects!=nil}.each do |r|
-		len = r.rects.length
-		(0...(len-1)).each do |i|
-			((i+1)...(len)).each do |j|
-				if r.rects[j].type>r.rects[i].type
-					temp = LCTransform.extract r.rects[i],r.rects[j]
-				else
-					temp = LCTransform.extract r.rects[j],r.rects[i]
-				end
-				f.puts temp.to_tsv_s
-			end
-		end
-	end
+File.open(listfn, 'w') do |f|
+  Record.seperate_records('', IO.foreach(lcdat), Record.parsers[:origin]).reject { |r| r.rects.nil? }.each do |r|
+    len = r.rects.length
+    (0...(len - 1)).each do |i|
+      ((i + 1)...len).each do |j|
+        temp = if r.rects[j].type > r.rects[i].type
+                 LCTransform.extract r.rects[i], r.rects[j]
+               else
+                 LCTransform.extract r.rects[j], r.rects[i]
+               end
+        f.puts temp.to_tsv_s
+      end
+    end
+  end
 end
-
