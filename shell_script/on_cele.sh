@@ -2,7 +2,8 @@ work_dir='/home/lichao/research/vault/cele2017'
 img_dir='/home/lichao/research/vault/nips/data/test/'
 #scan_record='$work_dir/scan_voc2007_test_80k_sampled_8px.txt'
 nips_clusters='/home/lichao/git/posecpp/model/nips_clusters.txt'
-nips_transforms='/home/lichao/git/posecpp/model/nips_transforms.txt'
+nips_transforms='/home/lichao/git/posecpp/model/nips_transforms.txt' # torso
+nips_head_transforms='/home/lichao/git/posecpp/model/nips_head_transforms.txt'
 annot_all=$work_dir'/annot_cele_torso_all.txt'
 annot_frontal=$work_dir'/annot_cele_torso_frontal.txt'
 head_clusters='/home/lichao/git/posecpp/model/head_clusters_46.txt'
@@ -63,9 +64,13 @@ else
 		headanchor)
 			echo "Head anchored complex mode: ours_on_cele_complex_headanchored.sh"
 			### ours_on_cele_complex_head_anchored.sh
-			ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms --anchor-transform /home/lichao/git/posecpp/model/nips_head_transforms.txt -o $work_dir/torso_cele_${step}pix_headanchor_$i.txt --gfilter complex  --bias --group_threshold $i 
-			suffix=torso_cele_${step}pix_headanchor_$i;dir=all_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_all -p $work_dir/$suffix.txt -v   $options
-			suffix=torso_cele_${step}pix_headanchor_$i;dir=frontal_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_frontal -p $work_dir/$suffix.txt -v   $options
+			suffix=torso_cele_${step}pix_headanchor_$i
+			if [ ! -e $work_dir/$suffix.txt ]
+			then
+				ruby ../record_to_head.rb -s $img_dir -r $scan_record --corenode $head_clusters -n $nips_clusters -t $nips_transforms --anchor-transform $nips_head_transforms -o $work_dir/$suffix.txt --gfilter complex  --bias --group_threshold $i 
+			fi
+			dir=all_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_all -p $work_dir/$suffix.txt -v   $options
+			dir=frontal_$suffix;rm -r $work_dir/$dir;ruby ../new_diff.rb -s $img_dir -o $work_dir/$dir/ -a $annot_frontal -p $work_dir/$suffix.txt -v   $options
 			;;
 
 		haha)

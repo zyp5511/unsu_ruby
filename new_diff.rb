@@ -56,10 +56,6 @@ OptionParser.new do |opts|
     options[:crop] = v
   end
 
-  opts.on('--fnwidth [VALUE]', Float, 'false negative width ') do |v| # deprecated
-    options[:fnwidth] = v
-  end
-
   opts.on('-h', '--help', 'Prints this help') do
     puts opts
     exit
@@ -72,16 +68,17 @@ cvdat = options[:annotation]
 lcdat = options[:predication]
 
 # anntation filter
+annot_records_raw = Record.seperate_records(src, IO.foreach(cvdat), Record.parsers[:cv])
 if options.key?(:threshold)
-  tt = options[:threshold]
-  puts "annotation score threshold #{tt} is given"
-  annot_records = Hash[Record.seperate_records(src, IO.foreach(cvdat), Record.parsers[:cv]).map { |r| [r.filename, r.rects.select { |x| x.dis > tt }] }]
+  thres = options[:threshold]
+  puts "annotation score threshold #{thres} is given"
+  annot_records = Hash[annot_records_raw.map { |r| [r.filename, r.rects.select { |x| x.dis > thres }] }]
 elsif options.key?(:annotheight)
   tt = options[:annotheight]
   puts "annotation height lower bound #{tt} is given"
-  annot_records = Hash[Record.seperate_records(src, IO.foreach(cvdat), Record.parsers[:cv]).map { |r| [r.filename, r.rects.select { |x| x.h > tt }] }]
+  annot_records = Hash[annot_records_raw.map { |r| [r.filename, r.rects.select { |x| x.h > tt }] }]
 else
-  annot_records = Hash[Record.seperate_records(src, IO.foreach(cvdat), Record.parsers[:cv]).map { |r| [r.filename, r.rects] }]
+  annot_records = Hash[annot_records_raw.map { |r| [r.filename, r.rects] }]
 end
 
 puts "start processing file:#{lcdat}"
@@ -96,7 +93,6 @@ end
 
 if options.key?(:predheight)
   puts "predication height threshold #{options[:predheight]} is given"
-  tt2 = options[:predheight]
   record_choosers << ->(x) { x.h > options[:predheight] }
 end
 
@@ -106,17 +102,7 @@ else
   pred_records = Hash[Record.seperate_records(src, IO.foreach(lcdat), Record.parsers[:cv]).map { |r| [r.filename, r.rects] }]
 end
 
-# Deprecated: false negative threshold
-if options.key?(:fnwidth)
-  puts "false negative threshold #{options[:fnwidth]} used"
-  wt = options[:fnwidth]
-end
-
 puts "there are #{pred_records.length} records" if options.key?(:info)
-
-cso = 0
-osc = 0
-inter = 0
 
 # Created needed folders.
 FileUtils.mkdir(des) unless File.directory?(des)
@@ -139,7 +125,7 @@ def draw_rect(ori, cvr)
   rdraw.text(cvr.x + 1, cvr.y + 1, cvr.type.to_s.inspect) unless cvr.type.nil?
   rdraw.text(cvr.x + 1, cvr.y + cvr.h - 20, cvr.dis.to_s.inspect) unless cvr.dis.nil?
   rdraw.draw(ori)
-rescue Exception => e
+rescue StandardError => e
   puts 'draw_rect=======================Error!====================='
   puts cvr.inspect
   puts e.backtrace.join("\n")
@@ -152,6 +138,29 @@ def crop_rect(ori, rect, subdir, filename)
   temp.write("#{File.join(subdir, File.basename(filename, File.extname(filename)))}_#{rect.x}+#{rect.y}+#{rect.w}x#{rect.h}#{File.extname(filename)}")
 end
 
+def compare_annot_vs_pred(annot_rec, pred_rec)
+  num_fp = 0 # fp
+  num_fn = 0 # fn
+  num_tp = 0 # tp
+  matched_rects = Set.new
+  matched_annot = Set.new
+  missed_annot = Set.new
+  annot_rec.each do |annot_rect|
+    current_matched_rects = pred_rec.select { |vr| vr.has_point annot_rect.x + (annot_rect.w / 2), annot_rect.y + (annot_rect.h / 2) }
+    if current_matched_rects.empty?
+      # miss found
+      num_fn += 1
+      missed_annot.add(annot_rect)
+    else
+      # matched
+      num_tp += 1
+      matched_annot.add(annot_rect)
+      matched_rects.merge(current_matched_rects)
+    end
+  end
+  [num_tp, num_fn, num_fp, matched_rects, matched_annot, missed_annot]
+end
+
 fnrect = []
 fprect = []
 tprect = []
@@ -159,69 +168,49 @@ tprect = []
 annot_processed = Set.new
 
 res = pred_records.map do |k, v|
-  osc = 0 # fp
-  cso = 0 # fn
-  inter = 0 # tp
+  matched_rects = Set.new # Matched rects out of v
   if options.key?(:plot) || options.key?(:crop)
     fn_img = Magick::Image.read(File.join(src, k).to_s).first
     fp_img =  fn_img.clone
     tp_img =  fn_img.clone
   end
-  fnfound = false
-  tpfound = false
-  matched = {}
+
   fnrect << k
   tprect << k
   fprect << k
+  num_tp = 0
+  num_fn = 0
+  num_fp = 0
   if !annot_records[k].nil?
     annot_processed << k
-    annot_records[k].each do |cvr|
-      vid = v.select { |vr| vr.has_point cvr.x + (cvr.w / 2), cvr.y + (cvr.h / 2) }
-      if vid.empty?
-        # miss found
-        #
-        # record missing with small size
-        if options.key?(:fnwidth)
-          fnrect << cvr if cvr.w < wt
-        else
-          fnrect << cvr
-        end
-        cso += 1
-        fnfound = true
-        draw_rect(fn_img, cvr) if options.key?(:plot)
-      else
-        # matched
-        # tprect << cvr
-        vid.each { |r| tprect << r }
-        tpfound = true
-        vid.each { |g| matched[g] = true }
-        if options.key?(:plot)
-          draw_rect(tp_img, cvr)
-          vid.each { |g| draw_rect(tp_img, g) }
-        elsif options.key?(:crop)
-          vid.each { |g| crop_rect(tp_img, g, tpdir, k) }
-        end
-        if vid.length > 1
-          puts "multiple matches in #{k}" if options.key?(:info)
-        end
-        inter += 1
-      end
+    num_tp, num_fn, num_fp, matched_rects, matched_annot, missed_annot =
+      compare_annot_vs_pred(annot_records[k], v)
+    matched_rects.each { |r| tprect << r }
+    missed_annot.each { |r| fnrect << r }
+    if matched_rects.length > 1
+      puts "multiple matches in #{k}" if options.key?(:info)
     end
     if options.key?(:plot)
-      if fnfound
-        # export missing faces
+      if num_fn > 0
+        # Plot missing faces
+        missed_annot.each { |g| draw_rect(fn_img, g) }
         fn_img.write(File.join(des, 'fn', k).to_s)
       end
-      if tpfound
-        # export dectected faces
+      if num_tp > 0
+        # Plot dectected faces
+        matched_annot.each { |g| draw_rect(tp_img, g) }
+        matched_rects.each { |g| draw_rect(tp_img, g) }
         tp_img.write(File.join(des, 'tp', k).to_s)
       end
+    elsif options.key?(:crop)
+      matched_rects.each { |g| crop_rect(tp_img, g, tpdir, k) }
     end
+
   else
     puts "postive annotation not found for image #{k}" if options.key?(:info)
   end
-  v.reject { |x| matched[x] }.each do |g|
-    # export false alert
+  v.reject { |x| matched_rects.include?(x) }.each do |g|
+    # Export false alert
     fprect << g
     if options.key?(:plot)
       draw_rect(fp_img, g)
@@ -229,8 +218,8 @@ res = pred_records.map do |k, v|
       crop_rect(fp_img, g, fpdir, k)
     end
   end
-  osctemp = v.length - v.select { |x| matched[x] }.length
-  osc += osctemp
+  osctemp = v.length - matched_rects.length
+  num_fp += osctemp
   ## plot FP count
   if options.key?(:plot)
     rdraw = Magick::Draw.new
@@ -245,7 +234,7 @@ res = pred_records.map do |k, v|
   fnrect.pop if fnrect[-1] == k
   tprect.pop if tprect[-1] == k
   fprect.pop if fprect[-1] == k
-  [inter, osc, cso]
+  [num_tp, num_fp, num_fn]
 end
 
 res = res.transpose
@@ -281,6 +270,7 @@ def output_stat(fn, rects)
   end
 end
 
+# Export per-viewlet histogram.
 if !options[:verbose].nil? && options[:verbose]
   puts 'outputing in verbose mode'
   output_stat(File.join(des, 'fnstat.txt'), fnrect)

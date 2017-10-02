@@ -7,7 +7,8 @@ class LCTransform
                 :vx, :vy, :vr
   attr_accessor :derived
   attr_accessor :reliability # sum of relative standard variance
-  def initialize(from, to, xr, yr, r, avx = 1, avy = 1, avr = 1, derived = false, rel = 100_000)
+  def initialize(from, to, xr, yr, r,
+                 avx = 1, avy = 1, avr = 1, derived = false, rel = 100_000)
     @from = from
     @to = to
     @xr = xr
@@ -86,7 +87,7 @@ class LCTransform
 
   def <=>(other) # for sorting
     comparision = r <=> other.r
-    if comparision == 0
+    if comparision.zero?
       return xr <=> other.xr
     else
       return comparision
