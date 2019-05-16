@@ -32,7 +32,7 @@ File.open(listfn, 'w') do |f|
     len = r.rects.length
     (0...(len - 1)).each do |i|
       ((i + 1)...len).each do |j|
-        temp = if r.rects[j].type > r.rects[i].type
+        temp = if r.rects[j].type > r.rects[i].type  #here we want to make sure the edge is directed from small cluster number to big cluster number
                  LCTransform.extract r.rects[i], r.rects[j]
                else
                  LCTransform.extract r.rects[j], r.rects[i]
